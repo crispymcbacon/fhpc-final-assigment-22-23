@@ -6,10 +6,7 @@
 void update_playground(int, int, int *);
 void print_playground(int, int, int *);
 void upgrade_cell(int, int, int, int, int *);
-
-void upgrade_cell_optimized(int, int, int, int, int *);
 void update_playground_parallel(int, int, int *);
-void print_playground_parallel(int, int, int *);
 
 int main(int argc, char** argv) {
 
@@ -27,7 +24,7 @@ int main(int argc, char** argv) {
     omp_set_num_threads(nThreads);
 
     // Initialize the playground
-    const int k = 10;
+    const int k = 15;
     int playground[k][k];
     int *p = &playground[0][0];
 
@@ -48,7 +45,7 @@ int main(int argc, char** argv) {
     for (int i = 0; i < k; i++){
         for (int j = 0; j < k; j++){
             //random
-            if (drand48() < 0.5)
+            if (drand48() < 0.05)
                 playground[i][j] = 1;
             else
                 playground[i][j] = 0;
@@ -59,7 +56,7 @@ int main(int argc, char** argv) {
     printf("\nInitial playground:");
     print_playground(k, k, p);
 
-    int steps = 10000;
+    int steps = 1000;
     while (steps > 0){
         update_playground(k, k, p);
         //update_playground_parallel(k, k, p);
@@ -117,16 +114,6 @@ void print_playground(int k_i, int k_j, int *playground) {
     return;
 }
 
-void print_playground_parallel(int rows, int cols, int* playground) {
-    #pragma omp parallel for collapse(2)
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < cols; j++) {
-            printf("%d ", playground[i*cols + j]);
-        }
-        //printf("\n");
-    }
-}
-
 
 void update_playground(int k_i, int k_j, int *playground) { 
     for (int i = 0; i < k_i; i++){
@@ -137,47 +124,17 @@ void update_playground(int k_i, int k_j, int *playground) {
     return;
 }
 
-void upgrade_cell(int c_i, int c_j, int k_i, int k_j, int *playground) {
-    int neighbours = 0;
-    int idx_i, idx_j;
-    int idx = c_i*k_j + c_j;
-    for (int i = c_i - 1; i <= c_i + 1; i++){
-        idx_i = (i < 0) ? k_i + i : (i >= k_i) ? i - k_i : i;
-        for (int j = c_j - 1; j <= c_j + 1; j++){
-            idx_j = (j < 0) ? k_j + j : (j >= k_j) ? j - k_j : j;
-            if (idx_i == c_i && idx_j == c_j)
-                continue;
-            if (playground[idx_i*k_j + idx_j] == 1)
-                neighbours++;
-        }
-    }
-
-    // print neighbours
-    //printf("\nCell (%d, %d) has %d neighbours)", c_i, c_j, neighbours);
-
-    if (playground[idx] == 1){
-        
-        if (neighbours < 2 || neighbours > 3)
-            playground[idx] = 0;
-    }
-    else{
-        if (neighbours == 3)
-            playground[idx] = 1;
-    }
-
-}
-
 void update_playground_parallel(int k_i, int k_j, int *playground) {
     #pragma omp parallel for collapse(2)
     for (int i = 0; i < k_i; i++){
         for (int j = 0; j < k_j; j++){
-            upgrade_cell_optimized(i, j, k_i, k_j, playground);
+            upgrade_cell(i, j, k_i, k_j, playground);
         }
     }
     return;
 }
 
-void upgrade_cell_optimized(int c_i, int c_j, int k_i, int k_j, int* playground) {
+void upgrade_cell(int c_i, int c_j, int k_i, int k_j, int* playground) {
     int neighbors = 0;
     for (int i = -1; i <= 1; i++) {
         for (int j = -1; j <= 1; j++) {
@@ -193,7 +150,7 @@ void upgrade_cell_optimized(int c_i, int c_j, int k_i, int k_j, int* playground)
             playground[idx] = 0;
         }
     } else {
-        if (neighbors == 3) {
+        if (neighbors == 3 || neighbors == 2) {
             playground[idx] = 1;
         }
     }
