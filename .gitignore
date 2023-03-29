@@ -107,4 +107,7 @@ Temporary Items
 .history
 .ionide
 
+### Images ###
+*.pgm
+
 # End of https://www.toptal.com/developers/gitignore/api/c,macos,visualstudiocode
