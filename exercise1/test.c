@@ -39,7 +39,7 @@ int main(int argc, char** argv) {
     //omp_set_num_threads(nThreads);
 
     // Initialize the playground
-    const int k = 100;
+    const int k = 5;
     int playground[k][k];
     int *p = &playground[0][0];
 
@@ -111,11 +111,13 @@ void upgrade_cell(int c_i, int c_j, int k_i, int k_j, int* playground) {
     }
     int idx = c_i*k_j + c_j;
     if (playground[idx] == 1) {
-        if (neighbors < 2 || neighbors > 3) {
+        //if (neighbors < 2 || neighbors > 3) {
+        if (neighbors < 3) {
             playground[idx] = 0;
         }
     } else {
-        if (neighbors == 3 || neighbors == 2) {
+        //if (neighbors == 3 || neighbors == 2) {
+        if (neighbors == 3) {
             playground[idx] = 1;
         }
     }

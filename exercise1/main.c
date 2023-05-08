@@ -59,7 +59,7 @@ int main(int argc, char** argv) {
     for (int i = 0; i < k; i++){
         for (int j = 0; j < k; j++){
             //random
-            if (drand48() < 0.05)
+            if (drand48() < 0.2)
                 playground[i][j] = 1;
             else
                 playground[i][j] = 0;
@@ -68,17 +68,16 @@ int main(int argc, char** argv) {
 
     // Print the playground
     printf("\nInitial playground:");
-    print_playground(k, k, p);
-    generate_pgm_image2(p, MAXVAL, k, k, "snapshots/snapshot_00000.pgm");
+    generate_pgm_image2(p, MAXVAL, k, k, "snapshots.nosync/snapshot_00000.pgm");
 
-    int steps = 100;
+    int steps = 1000;
     char filename[100];
     for (int i = 1; i <= steps; i++){
-        update_playground(k, k, p);
+        update_playground2(k, k, p);
         ////update_playground_parallel(k, k, p);
         //printf("\nStep %d:", steps);
         //print_playground(k, k, p);
-        sprintf(filename, "snapshots/snapshot_%05d.pgm", i);
+        sprintf(filename, "snapshots.nosync/snapshot_%05d.pgm", i);
         #pragma omp barrier
         generate_pgm_image2(p, MAXVAL, k, k, filename);
     }
@@ -141,6 +140,7 @@ void update_playground(int k_i, int k_j, int *playground) {
 
 void update_playground2(int k_i, int k_j, int *playground) {
     int tmp_playground[k_i][k_j];
+    #pragma omp parallel for collapse(2)
     for (int i = 0; i < k_i; i++){
         for (int j = 0; j < k_j; j++){
             tmp_playground[i][j] = upgrade_cell2(i, j, k_i, k_j, playground);
@@ -148,6 +148,7 @@ void update_playground2(int k_i, int k_j, int *playground) {
     }
     
     // Copy tmp_playground back to the original playground
+    #pragma omp parallel for collapse(2)
     for (int i = 0; i < k_i; i++){
         for (int j = 0; j < k_j; j++){
             playground[i*k_j + j] = tmp_playground[i][j];
@@ -173,7 +174,8 @@ int upgrade_cell2(int c_i, int c_j, int k_i, int k_j, int* playground) {
             return 1;
         }
     } else {
-        if (neighbors == 3 || neighbors == 2) {
+        //if (neighbors == 3 || neighbors == 2) {
+        if (neighbors == 3) {
             return 1;
         } else {
             return 0;
@@ -236,7 +238,6 @@ void generate_pgm_image(int *playground, int maxval, int k_i, int k_j, const cha
             }
         }
     }
-    print_playground(k_i, k_j, p);
     // save the matrix to a file
     write_pgm_image(p, maxval, k_i, k_j, image_name);
     return;
@@ -253,25 +254,13 @@ void generate_pgm_image2(int *playground, int maxval, int k_i, int k_j, const ch
     // fill the matrix with the values 0 and 255
     for (int i = 0; i < k_i; i++){
         for (int j = 0; j < k_j; j++){
-            printf(" %d", playground[i*k_j + j]);
             if (playground[i*k_j + j] == 1) {
                 cImage[idx++]  = -1;
-                printf("1");
             } else {
                 cImage[idx++]  = 0;
-                printf("0");
             }
         }
     }
-
-    printf("\n Cimage");
-    for (int i = 0; i < k_i; i++){
-        for (int j = 0; j < k_j; j++){
-            printf(" %d", cImage[i*k_j + j]);
-        }
-    }
-    
-    printf("\n");
     // save the matrix to a file
     write_pgm_image(ptr, maxval, k_i, k_j, image_name);
     return;

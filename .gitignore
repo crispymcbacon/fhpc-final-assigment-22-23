@@ -107,7 +107,13 @@ Temporary Items
 .history
 .ionide
 
-### Images ###
+### Media ###
 *.pgm
+*.jpeg
+*.avi
+
 
 # End of https://www.toptal.com/developers/gitignore/api/c,macos,visualstudiocode
+
+### My Files ###
+/exercise1/video.command
