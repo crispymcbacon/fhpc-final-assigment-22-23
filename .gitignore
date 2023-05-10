@@ -90,7 +90,7 @@ Temporary Items
 
 ### VisualStudioCode ###
 .vscode/*
-!.vscode/settings.json
+#!.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
@@ -117,3 +117,5 @@ Temporary Items
 
 ### My Files ###
 /exercise1/video.command
+exclude.txt
+.vscode/settings.json

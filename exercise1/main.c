@@ -9,14 +9,14 @@
 #define YWIDTH 256
 #define MAXVAL 1//65535
 
-#if ((0x100 & 0xf) == 0x0)
-#define I_M_LITTLE_ENDIAN 1
-#define swap(mem) (( (mem) & (short int)0xff00) >> 8) +	\
-  ( ((mem) & (short int)0x00ff) << 8)
-#else
-#define I_M_LITTLE_ENDIAN 0
-#define swap(mem) (mem)
-#endif
+// #if ((0x100 & 0xf) == 0x0)
+// #define I_M_LITTLE_ENDIAN 1
+// #define swap(mem) (( (mem) & (short int)0xff00) >> 8) +	\
+//   ( ((mem) & (short int)0x00ff) << 8)
+// #else
+// #define I_M_LITTLE_ENDIAN 0
+// #define swap(mem) (mem)
+// #endif
 
 
 void update_playground(int, int, int *);
