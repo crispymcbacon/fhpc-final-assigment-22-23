@@ -13,22 +13,16 @@ int main(int argc, char** argv) {
     double cpu_time_used;
     start = clock(); // start time
 
-    // Iniitialize the random number generator
-    srand48(time(NULL));
-
-    // Initialize the number of threads
-    const int nThreads = 2;
-    //omp_set_num_threads(nThreads);
-
     // Initialize the playground
     const int k = 5;
     int playground[k][k];
     int *p = &playground[0][0];
 
     // Initialize the playground with random numbers
+    srand48(time(NULL)); // set seed 
     for (int i = 0; i < k; i++){
         for (int j = 0; j < k; j++){
-            if (drand48() < 0.2) // probability 0.2 for a cell to be alive
+            if (drand48() < 0.3) // probability 30% for a cell to be alive
                 playground[i][j] = 1;
             else
                 playground[i][j] = 0;
@@ -99,11 +93,6 @@ void upgrade_cell(int c_i, int c_j, int k_i, int k_j, int* playground) {
     }
 
     // Update the cell
-    int idx = c_i*k_j + c_j; // index of the cell
-    if (neighbors == 2 || neighbors == 3) {
-        playground[idx] = 1;
-    } else {
-        playground[idx] = 0;
-    }
+    playground[c_i*k_j + c_j] = (neighbors == 2 || neighbors == 3) ? 1 : 0;
 
 }
