@@ -5,9 +5,9 @@
     "code-runner.executorMap": {
         "javascript": "node",
         "java": "cd $dir && javac $fileName && java $fileNameWithoutExt",
-        "c": "cd $dir && g++-12 -fopenmp $fileName -o $fileNameWithoutExt.o && $dir$fileNameWithoutExt.o",
+        "c": "cd $dir && $BREW_CXX -fopenmp $fileName -o $fileNameWithoutExt.o && $dir$fileNameWithoutExt.o",
         "zig": "zig run",
-        "cpp": "cd $dir && g++-12 $fileName -o $fileNameWithoutExt && $dir$fileNameWithoutExt",
+        "cpp": "cd $dir && $BREW_CXX $fileName -o $fileNameWithoutExt && $dir$fileNameWithoutExt",
         "objective-c": "cd $dir && gcc -framework Cocoa $fileName -o $fileNameWithoutExt && $dir$fileNameWithoutExt",
         "php": "php",
         "python": "python -u",
@@ -55,5 +55,6 @@
         "fortran_fixed-form": "cd $dir && gfortran $fileName -o $fileNameWithoutExt && $dir$fileNameWithoutExt",
         "fortran": "cd $dir && gfortran $fileName -o $fileNameWithoutExt && $dir$fileNameWithoutExt",
         "sml": "cd $dir && sml $fileName"
-    }
+    },
+    "files.autoSave": "afterDelay"
 }

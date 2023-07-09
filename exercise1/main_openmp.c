@@ -1,9 +1,9 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
 #include <stdbool.h>
+#include <omp.h>
 
 void update_playground_ordered(int, int, int *);
 int* update_playground_static(int, int, int *);
@@ -24,8 +24,8 @@ int main(int argc, char** argv) {
 
     // Initialize the playground with random numbers
     srand48(time(NULL)); // set seed 
-    for (int i = 0; i < k; i++){
-        for (int j = 0; j < k; j++){
+    for (int i = 0; i < k; i++) {
+        for (int j = 0; j < k; j++) {
             if (drand48() < 0.3) // probability 30% for a cell to be alive
                 playground[i][j] = 1;
             else
@@ -36,37 +36,39 @@ int main(int argc, char** argv) {
     // Print the initial playground
     printf("\nInitial playground:\n");
     print_playground(k, k, p);
-    
+
     // Set the number of steps
     int steps = 1;
 
     bool static_mode = false;
 
-
-    if (static_mode){
+    if (static_mode) {
         // Update and print the playground after each step
-        for (int i = 0; i < steps; i++){
+        for (int i = 0; i < steps; i++) {
             p = update_playground_static(k, k, p);
 
             // Print the playground
-            printf("\nStep %d:\n", i+1); // i+1 because we start at 0
-            print_playground(k, k, p);
-        }
-    } else {
-        // Update and print the playground after each step
-        for (int i = 0; i < steps; i++){
-            update_playground_ordered(k, k, p);
-
-            // Print the playground
-            printf("\nStep %d:\n", i+1); // i+1 because we start at 0
+            printf("\nStep %d:\n", i + 1); // i+1 because we start at 0
             print_playground(k, k, p);
         }
     }
-    
+    else {
+        // Update and print the playground after each step
+        for (int i = 0; i < steps; i++) {
+#pragma omp parallel for
+            for (int j = 0; j < k; j++) {
+                update_playground_ordered(k, j, p);
+            }
+
+            // Print the playground
+            printf("\nStep %d:\n", i + 1); // i+1 because we start at 0
+            print_playground(k, k, p);
+        }
+    }
 
     // Print the time used
     end = clock(); // stop time
-    cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+    cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC;
     printf("\nTime taken: %f seconds\n", cpu_time_used);
 
     return 0;
@@ -75,9 +77,9 @@ int main(int argc, char** argv) {
 // Print the playground as a matrix
 void print_playground(int k_i, int k_j, int *playground) {
     // Print each cell
-    for (int i = 0; i < k_i; i++){
-        for (int j = 0; j < k_j; j++){
-            printf("%d ", playground[j*k_j + i]);
+    for (int i = 0; i < k_i; i++) {
+        for (int j = 0; j < k_j; j++) {
+            printf("%d ", playground[j * k_j + i]);
         }
         printf("\n");
     }
@@ -88,10 +90,8 @@ void print_playground(int k_i, int k_j, int *playground) {
 void update_playground_ordered(int k_i, int k_j, int *playground) {
 
     // Update each cell
-    for (int i = 0; i < k_i; i++){
-        for (int j = 0; j < k_j; j++){
-            upgrade_cell(i, j, k_i, k_j, playground);
-        }
+    for (int i = 0; i < k_i; i++) {
+        upgrade_cell(i, k_j, k_i, k_j, playground);
     }
     return;
 }
@@ -113,22 +113,23 @@ void upgrade_cell(int c_i, int c_j, int k_i, int k_j, int* playground) {
     }
 
     // Update the cell
-    playground[c_i*k_j + c_j] = (neighbors == 2 || neighbors == 3) ? 1 : 0;
+    playground[c_i * k_j + c_j] = (neighbors == 2 || neighbors == 3) ? 1 : 0;
 }
 
 // Update the playground in the static way
 int* update_playground_static(const int k_i, const int k_j, int *playground) {
 
     // Allocate memory for playground B
-    int *playground_b = (int*) malloc(k_i * k_j * sizeof(int));
+    int *playground_b = (int*)malloc(k_i * k_j * sizeof(int));
 
     // Copy the contents of playground A to playground B
     memcpy(playground_b, playground, k_i * k_j * sizeof(int));
 
     // Update each cell in playground B
-    for (int i = 0; i < k_i; i++){
-        for (int j = 0; j < k_j; j++){
-            playground_b[i*k_j + j] = upgrade_cell_static(i, j, k_i, k_j, playground);
+#pragma omp parallel for collapse(2)
+    for (int i = 0; i < k_i; i++) {
+        for (int j = 0; j < k_j; j++) {
+            playground_b[i * k_j + j] = upgrade_cell_static(i, j, k_i, k_j, playground);
         }
     }
 
