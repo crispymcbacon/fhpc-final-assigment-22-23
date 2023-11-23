@@ -1,3 +1,18 @@
+/*
+- **Ordered Evolution**: This method updates the cells in a row-major order, which can cause
+dependencies and introduce artifacts due to the order of updates.
+
+- **Static Evolution**: This method evaluates the statuses first without actually updating
+the cells. In the second pass, it updates all cells at once based on the evaluated statuses.
+
+- **Random Start Evolution**: This method chooses a random starting point and updates cells
+in a propagating square wave pattern. This simulates a non-deterministic update order.
+
+- **Chessboard (Checkerboard) Evolution**: This method updates cells in a two-pass approach:
+first the "white" cells and then the "black" cells, analogous to a chessboard pattern.
+This helps to maintain some of the locality during updates but still introduces a 
+structured update order that is less biased than row-major.
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -5,11 +20,12 @@
 #include <string.h>
 #include <stdbool.h>
 
-void update_playground_ordered(int, int, int *);
-int* update_playground_static(int, int, int *);
-void print_playground(int, int, int *);
-void upgrade_cell(int, int, int, int, int *);
-int upgrade_cell_static(int, int, int, int, int *);
+void print_playground(int k_i, int k_j, int *playground);
+int upgrade_cell(int c_i, int c_j, int k_i, int k_j, int* playground);
+void update_playground_ordered(int k_i, int k_j, int *playground);
+void update_playground_static(int k_i, int k_j, int *playground);
+void update_playground_random_start(int k_i, int k_j, int *playground);
+void update_playground_chessboard(int k_i, int k_j, int *playground);
 
 int main(int argc, char** argv) {
     // Initialize the time counter
@@ -18,15 +34,16 @@ int main(int argc, char** argv) {
     start = clock(); // start time
 
     // Initialize the playground
-    const int k = 6;
+    const int k = 4;
     int playground[k][k];
     int *p = &playground[0][0];
+    double cell_alive_prob = 0.3; // probability for a cell to be alive
 
     // Initialize the playground with random numbers
     srand48(time(NULL)); // set seed 
     for (int i = 0; i < k; i++){
         for (int j = 0; j < k; j++){
-            if (drand48() < 0.3) // probability 30% for a cell to be alive
+            if (drand48() < cell_alive_prob)
                 playground[i][j] = 1;
             else
                 playground[i][j] = 0;
@@ -39,30 +56,34 @@ int main(int argc, char** argv) {
     
     // Set the number of steps
     int steps = 1;
+    int mode = 0;
 
-    bool static_mode = false;
+    // Update and print the playground after each step
+    for (int i = 0; i < steps; i++){
+        // Print the playground
+        printf("\nStep %d:\n", i+1); // i+1 because we start at 0
 
-
-    if (static_mode){
-        // Update and print the playground after each step
-        for (int i = 0; i < steps; i++){
-            p = update_playground_static(k, k, p);
-
-            // Print the playground
-            printf("\nStep %d:\n", i+1); // i+1 because we start at 0
-            print_playground(k, k, p);
+        switch (mode) {
+            case 0:
+                update_playground_ordered(k, k, p);
+                break;
+            case 1:
+                update_playground_static(k, k, p);
+                break;
+            case 2:
+                update_playground_random_start(k, k, p);
+                break;
+            case 3:
+                update_playground_chessboard(k, k, p);
+                break;
+            default:
+                printf("\nInvalid mode", mode);
+                break;
         }
-    } else {
-        // Update and print the playground after each step
-        for (int i = 0; i < steps; i++){
-            update_playground_ordered(k, k, p);
 
-            // Print the playground
-            printf("\nStep %d:\n", i+1); // i+1 because we start at 0
-            print_playground(k, k, p);
-        }
+        printf("\nStep %d:\n", i+1); // i+1 because we start at 0
+        print_playground(k, k, p);
     }
-    
 
     // Print the time used
     end = clock(); // stop time
@@ -74,84 +95,99 @@ int main(int argc, char** argv) {
 
 // Print the playground as a matrix
 void print_playground(int k_i, int k_j, int *playground) {
-    // Print each cell
     for (int i = 0; i < k_i; i++){
         for (int j = 0; j < k_j; j++){
-            printf("%d ", playground[j*k_j + i]);
+            printf("%d ", playground[j * k_j + i]);
         }
         printf("\n");
     }
     return;
 }
 
-// Update the playground in the classic way
+// Upgrade a single cell using the rules of the Game of Life
+int upgrade_cell(int c_i, int c_j, int k_i, int k_j, int* playground) {
+    int n_i, n_j, neighbors = 0;
+    for (int i = -1; i <= 1; i++) {
+        for (int j = -1; j <= 1; j++) {
+            if (i == 0 && j == 0) continue; // Skip the cell itself
+            n_i = (c_i + i + k_i) % k_i; // Wrap around edges if necessary
+            n_j = (c_j + j + k_j) % k_j;
+            neighbors += playground[n_i * k_j + n_j];
+        }
+    }
+
+    int current_state = playground[c_i * k_j + c_j];
+    if ((current_state == 1 && (neighbors == 2 || neighbors == 3)) ||
+        (current_state == 0 && neighbors == 3)) {
+        return 1; // Cell stays alive or is born
+    } else {
+        return 0; // Cell dies or remains dead
+    }
+}
+
+// Ordered evolution
 void update_playground_ordered(int k_i, int k_j, int *playground) {
+    int temp_playground[k_i * k_j]; // Create a temporary playground to store new cell states
 
-    // Update each cell
-    for (int i = 0; i < k_i; i++){
-        for (int j = 0; j < k_j; j++){
-            upgrade_cell(i, j, k_i, k_j, playground);
+    for (int i = 0; i < k_i; i++) {
+        for (int j = 0; j < k_j; j++) {
+            temp_playground[i * k_j + j] = upgrade_cell(i, j, k_i, k_j, playground); // Copy the new cell states to the original playground
         }
     }
-    return;
+    
+    memcpy(playground, temp_playground, k_i * k_j * sizeof(int));
 }
 
-// Upgrade a single cell
-void upgrade_cell(int c_i, int c_j, int k_i, int k_j, int* playground) {
-    // Count the number of neighbors
-    int neighbors = 0;
-    for (int i = -1; i <= 1; i++) {
-        for (int j = -1; j <= 1; j++) {
-            if (i != 0 || j != 0) {
-                int n_i = (c_i + i + k_i) % k_i;
-                int n_j = (c_j + j + k_j) % k_j;
-                if (playground[n_i * k_j + n_j] == 1) {
-                    neighbors++;
-                }
-            }
+// Static evolution
+void update_playground_static(int k_i, int k_j, int *playground) {
+    int new_states[k_i * k_j]; // First pass - calculate new states
+
+    for (int i = 0; i < k_i; i++) { 
+        for (int j = 0; j < k_j; j++) {
+            new_states[i * k_j + j] = upgrade_cell(i, j, k_i, k_j, playground);
         }
     }
 
-    // Update the cell
-    playground[c_i*k_j + c_j] = (neighbors == 2 || neighbors == 3) ? 1 : 0;
+    memcpy(playground, new_states, k_i * k_j * sizeof(int)); // Second pass - update all cells at once
 }
 
-// Update the playground in the static way
-int* update_playground_static(const int k_i, const int k_j, int *playground) {
+// Random Start evolution
+void update_playground_random_start(int k_i, int k_j, int *playground) {
+    int temp_playground[k_i * k_j];
+    int start_i = rand() % k_i;
+    int start_j = rand() % k_j;
 
-    // Allocate memory for playground B
-    int *playground_b = (int*) malloc(k_i * k_j * sizeof(int));
+    // Insert your propagation logic here if required...
+    // For now, it simply performs an ordered update starting from a random cell
 
-    // Copy the contents of playground A to playground B
-    memcpy(playground_b, playground, k_i * k_j * sizeof(int));
-
-    // Update each cell in playground B
-    for (int i = 0; i < k_i; i++){
-        for (int j = 0; j < k_j; j++){
-            playground_b[i*k_j + j] = upgrade_cell_static(i, j, k_i, k_j, playground);
+    for (int i = 0; i < k_i; i++) {
+        for (int j = 0; j < k_j; j++) {
+            int ii = (start_i + i) % k_i;
+            int jj = (start_j + j) % k_j;
+            temp_playground[ii * k_j + jj] = upgrade_cell(ii, jj, k_i, k_j, playground);
         }
     }
 
-    // Return the pointer to playground B
-    return playground_b;
+    memcpy(playground, temp_playground, k_i * k_j * sizeof(int));
 }
 
-// Upgrade a single cell
-int upgrade_cell_static(int c_i, int c_j, int k_i, int k_j, int* playground) {
-    // Count the number of neighbors
-    int neighbors = 0;
-    for (int i = -1; i <= 1; i++) {
-        for (int j = -1; j <= 1; j++) {
-            if (i != 0 || j != 0) {
-                int n_i = (c_i + i + k_i) % k_i;
-                int n_j = (c_j + j + k_j) % k_j;
-                if (playground[n_i * k_j + n_j] == 1) {
-                    neighbors++;
-                }
-            }
+// Chessboard evolution
+void update_playground_chessboard(int k_i, int k_j, int *playground) {
+    int temp_playground[k_i * k_j];
+
+    // Update "white" cells
+    for (int i = 0; i < k_i; i++) {
+        for (int j = (i % 2); j < k_j; j += 2) {
+            temp_playground[i * k_j + j] = upgrade_cell(i, j, k_i, k_j, playground);
         }
     }
 
-    // Return cell status
-    return (neighbors == 2 || neighbors == 3) ? 1 : 0;
+    // Update "black" cells
+    for (int i = 0; i < k_i; i++) {
+        for (int j = ((i % 2) ? 0 : 1); j < k_j; j += 2) {
+            temp_playground[i * k_j + j] = upgrade_cell(i, j, k_i, k_j, playground);
+        }
+    }
+
+    memcpy(playground, temp_playground, k_i * k_j * sizeof(int));
 }
