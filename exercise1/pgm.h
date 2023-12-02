@@ -3,20 +3,20 @@
 
 #include <stdlib.h>
 
-void generate_pgm_image_old(int *playground, int maxval, int k_i, int k_j, const char *image_name);
-void generate_pgm_image(int *playground, int maxval, int k_i, int k_j, const char *image_name);
+void generate_pgm_image_old(int *playground, int maxval, int k, const char *image_name);
+void generate_pgm_image(int *playground, int maxval, int k, const char *image_name);
 void write_pgm_image(void *image, int maxval, int xsize, int ysize, const char *image_name);
 void read_pgm_image(void **image, int *maxval, int *xsize, int *ysize, const char *image_name);
 
 // create a function that generates a pgm image from a given matrix of just 2 values 0 and 1 and saves it to a file
-void generate_pgm_image_old(int *playground, int maxval, int k_i, int k_j, const char *image_name) {
+void generate_pgm_image_old(int *playground, int maxval, int k, const char *image_name) {
     // create a new matrix with the same dimensions as the playground
-    int new_playground[k_i][k_j];
+    int new_playground[k][k];
     int *p = &new_playground[0][0];
     // fill the matrix with the values 0 and 255
-    for (int i = 0; i < k_i; i++){
-        for (int j = 0; j < k_j; j++){
-            if (playground[i*k_j + j] == 1) {
+    for (int i = 0; i < k; i++){
+        for (int j = 0; j < k; j++){
+            if (playground[i*k + j] == 1) {
                 new_playground[i][j] = 255;
             } else {
                 new_playground[i][j] = 0;
@@ -24,22 +24,21 @@ void generate_pgm_image_old(int *playground, int maxval, int k_i, int k_j, const
         }
     }
     // save the matrix to a file
-    write_pgm_image(p, maxval, k_i, k_j, image_name);
+    write_pgm_image(p, maxval, k, k, image_name);
     return;
-
 }
 
-void generate_pgm_image(int *playground, int maxval, int k_i, int k_j, const char *image_name) {
+void generate_pgm_image(int *playground, int maxval, int k, const char *image_name) {
     char *cImage; 
-    cImage = (char*)calloc( k_i*k_j, sizeof(char) );
+    cImage = (char*)calloc( k * k, sizeof(char) );
     unsigned char _maxval = (char)maxval;
     int idx = 0;
     void *ptr;
     ptr = (void*)cImage;
     // fill the matrix with the values 0 and 255
-    for (int i = 0; i < k_i; i++){
-        for (int j = 0; j < k_j; j++){
-            if (playground[i*k_j + j] == 1) {
+    for (int i = 0; i < k; i++){
+        for (int j = 0; j < k; j++){
+            if (playground[i*k + j] == 1) {
                 cImage[idx++]  = -1;
             } else {
                 cImage[idx++]  = 0;
@@ -47,10 +46,47 @@ void generate_pgm_image(int *playground, int maxval, int k_i, int k_j, const cha
         }
     }
     // save the matrix to a file
-    write_pgm_image(ptr, maxval, k_i, k_j, image_name);
+    write_pgm_image(ptr, maxval, k, k, image_name);
     return;
-
 }
+
+void read_generated_pgm_image(int **playground, int *k, const char *filename) {
+    unsigned char *image_data;
+    int maxval;
+    int xsize, ysize;
+    read_pgm_image((void**)&image_data, &maxval, &xsize, &ysize, filename);
+
+    if (image_data == NULL) {
+        // Handle error: Image data could not be read
+        return;
+    }
+
+    *k = xsize; // Assuming xsize and ysize are the same for a square PGM image
+    *playground = (int *)malloc(xsize * ysize * sizeof(int));
+    if (!*playground) {
+        perror("Unable to allocate memory for the playground");
+        // Handle error: Memory allocation failed, you may want to free image_data if it was allocated
+        free(image_data);
+        return;
+    }
+
+    // Define a threshold to convert grayscale values to binary
+    // This example sets the threshold at the midpoint between 0 and maxval
+    int threshold = maxval / 2;
+
+    for (int i = 0; i < xsize * ysize; i++) {
+        if (image_data[i] > threshold) {
+            (*playground)[i] = 1;
+        } else {
+            (*playground)[i] = 0;
+        }
+    }
+
+    // Assuming that 'read_pgm_image' function allocated memory for image_data,
+    // you should free it after you are done copying the data.
+    free(image_data);
+}
+
 
 
 void write_pgm_image( void *image, int maxval, int xsize, int ysize, const char *image_name)

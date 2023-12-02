@@ -1,3 +1,15 @@
+### My Files ###
+*.sh
+*.mp4
+*.ipynb
+/exercise1/*.csv
+run-in-orfeo.md
+exclude.txt
+.vscode/settings.json
+TODO.md
+
+
+
 # Created by https://www.toptal.com/developers/gitignore/api/c,macos,visualstudiocode
 # Edit at https://www.toptal.com/developers/gitignore?templates=c,macos,visualstudiocode
 
@@ -114,9 +126,3 @@ Temporary Items
 
 
 # End of https://www.toptal.com/developers/gitignore/api/c,macos,visualstudiocode
-
-### My Files ###
-/exercise1/video.command
-exclude.txt
-.vscode/settings.json
-TODO.md

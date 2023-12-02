@@ -1,6 +1,10 @@
 {
     "files.associations": {
-        "time.h": "c"
+        "*.cf": "shellscript",
+        "time.h": "c",
+        "__locale": "c",
+        "ios": "c",
+        "format": "c"
     },
     "code-runner.executorMap": {
         "javascript": "node",
