@@ -62,7 +62,7 @@ int main(int argc, char **argv) {
        // Perform the requested actions based on parsed arguments
     if (initialize && filename != NULL && *k > 0) {
         initialize_playground(*k, filename);
-    } else if (run && filename != NULL && steps > 0 && (evolution_type == 0 || evolution_type == 1)) {
+    } else if (run && filename != NULL && steps > 0 && (evolution_type >= 0 && evolution_type <= 3)) {
         run_playground(filename, steps, evolution_type, save_step);
     } else {
         fprintf(stderr, "Error: Missing or incorrect arguments provided.\n");
@@ -129,11 +129,11 @@ void run_playground(const char* filename, int steps, int evolution_mode, int sav
     // Print the time used
     end = clock();  // stop time
     cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC;
-    printf("\nTime taken: %f seconds\n", cpu_time_used);
+    printf("Time taken: %f seconds\n", cpu_time_used);
 
     // DEVELOPMENT ONLY
     sprintf(filename_buffer, "vanilla");
-    append_to_logs(filename_buffer, evolution_mode, cpu_time_used, k, steps);
+    append_to_logs(filename, filename_buffer, evolution_mode, cpu_time_used, k, steps);
 }
 
 void evolve_playground(int k, int *playground, int evolution_mode, int steps, int save_step, const char* filename) {

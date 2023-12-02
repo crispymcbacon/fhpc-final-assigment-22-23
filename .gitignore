@@ -1,7 +1,6 @@
 ### My Files ###
 *.sh
 *.mp4
-*.ipynb
 /exercise1/*.csv
 run-in-orfeo.md
 exclude.txt
