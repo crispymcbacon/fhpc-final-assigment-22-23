@@ -1,171 +1,230 @@
-/*
-TODO
-- check random start if parallelization is compatible
-- check ordered if parallelization is compatible
-*/
-
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 #include <string.h>
-#include <stdbool.h>
+#include <time.h>
+#include <unistd.h>
 #include <omp.h>
+#include "pgm.h"
+#include "dev.h"
 
-void print_playground(int k_i, int k_j, int *playground);
-int upgrade_cell(int c_i, int c_j, int k_i, int k_j, int* playground);
-void update_playground_ordered(int k_i, int k_j, int *playground);
-void update_playground_static(int k_i, int k_j, int *playground);
-void update_playground_random_start(int k_i, int k_j, int *playground);
-void update_playground_chessboard(int k_i, int k_j, int *playground);
+#define RANDOMNESS 0.3 // Probability of a cell being alive at the start of the simulation
+#define MAXVAL 255     // Maximum value of a pixel in the PGM image
+#define DIRNAME "out.nosync"  // Name of the directory where the output files will be saved
 
-// DEVELOPMENT ONLY
-void append_to_logs(const char *filename, int mode, double time_taken, int k, int steps) {
-    // Open the file in "a+" mode, which allows both appending and reading.
-    FILE *file = fopen("logs.csv", "a+");
-    if (file == NULL) {
-        printf("Failed to open or create logs.csv\n");
-        return;
-    }
-    // Use ftell to check if the file is empty (i.e., the current position is 0).
-    if (ftell(file) == 0) {
-        fprintf(file, "file,mode,size,step,time_taken\n");  // The file is empty, so add the header line.
-    }
+// Function prototypes
+void initialize_playground(int k, const char* filename);
+void run_playground(const char* filename, int steps, int evolution_mode, int save_step);
+void evolve_playground(int k, int *playground, int evolution_mode, int steps, int save_step, const char* filename);
+void update_playground_ordered(int k, int *playground);
+void update_playground_static(int k, int *playground);
+void update_playground_random_start(int k, int *playground);
+void update_playground_chessboard(int k, int *playground);
+int upgrade_cell(int c_i, int c_j, int k, int *playground);
+void shuffle(int *array, int n);
 
-    fprintf(file, "%s;%d;%d;%d;%f\n", filename, mode, k, steps, time_taken);  // Append the new log data to the file.
-    fclose(file);                                                             // Close the file.
-}
 
-int main(int argc, char** argv) {
-    // Initialize the time counter
-    clock_t start, end;
-    double cpu_time_used;
-    start = clock(); // start time
+int main(int argc, char **argv) {
+    int option;
+    bool initialize = false, run = false;
+    int evolution_type = 0, steps = 0, save_step = 0;
+    int *k = (int *)malloc(sizeof(int));
+    char *filename = NULL;
 
-    // Initialize the playground
-    const int k = 100;
-    int playground[k][k];
-    int *p = &playground[0][0];
-    double cell_alive_prob = 0.3; // probability for a cell to be alive
-
-    // Initialize the playground with random numbers
-    srand48(time(NULL)); // set seed 
-    for (int i = 0; i < k; i++){
-        for (int j = 0; j < k; j++){
-            if (drand48() < cell_alive_prob)
-                playground[i][j] = 1;
-            else
-                playground[i][j] = 0;
-        }
-    }
-
-    // Print the initial playground
-    //printf("\nInitial playground:\n");
-    //print_playground(k, k, p);
-    
-    // Set the number of steps
-    int steps = 1e5;
-    int mode = 0;
-
-    // Update and print the playground after each step
-    for (int i = 0; i < steps; i++){
-        // Print the playground
-        //printf("\nStep %d:\n", i+1); // i+1 because we start at 0
-
-        switch (mode) {
-            case 0:
-                update_playground_ordered(k, k, p);
+     // Parse command-line arguments
+    while ((option = getopt(argc, argv, "irk:e:f:n:s:")) != -1) {
+        switch (option) {
+            case 'i': // Initialize playground
+                initialize = true;
                 break;
-            case 1:
-                update_playground_static(k, k, p);
+            case 'r': // Run playground
+                run = true;
                 break;
-            case 2:
-                update_playground_random_start(k, k, p);
+            case 'k': // Playground size
+                *k = atoi(optarg);
                 break;
-            case 3:
-                update_playground_chessboard(k, k, p);
+            case 'e': // Evolution type
+                evolution_type = atoi(optarg);
+                break;
+            case 'f': // Filename
+                filename = optarg;
+                break;
+            case 'n': // Number of steps
+                steps = atoi(optarg);
+                break;
+            case 's': // Save step
+                save_step = atoi(optarg);
                 break;
             default:
-                printf("\nInvalid mode", mode);
-                break;
+                fprintf(stderr, "Usage: %s [-i] [-r] [-k size] [-e evolution_type] [-f filename] [-n steps] [-s save_step]\n", argv[0]);
+                exit(EXIT_FAILURE);
         }
-
-        //print_playground(k, k, p);
     }
-
-    // Print the time used
-    end = clock(); // stop time
-    cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-    printf("\nTime taken: %f seconds\n", cpu_time_used);
-
-    // DEVELOPMENT ONLY
-    append_to_logs("main_openmp.c", mode, cpu_time_used, k, steps);
+       // Perform the requested actions based on parsed arguments
+    if (initialize && filename != NULL && *k > 0) {
+        initialize_playground(*k, filename);
+    } else if (run && filename != NULL && steps > 0 && (evolution_type >= 0 && evolution_type <= 3)) {
+        run_playground(filename, steps, evolution_type, save_step);
+    } else {
+        fprintf(stderr, "Error: Missing or incorrect arguments provided.\n");
+        exit(EXIT_FAILURE);
+    }
 
     return 0;
 }
 
-// Print the playground as a matrix
-void print_playground(int k_i, int k_j, int *playground) {
-    for (int i = 0; i < k_i; i++){
-        for (int j = 0; j < k_j; j++){
-            printf("%d ", playground[j * k_j + i]);
-        }
-        printf("\n");
+// Initialize playground with random binary values and save to file
+void initialize_playground(int k, const char* filename) {
+    srand48(time(NULL)); // Set seed for random number generation
+
+    int *playground = (int *)malloc(k * k * sizeof(int)); // Allocate memory for playground
+
+    // Check if memory allocation was successful
+    if (playground == NULL) {
+        fprintf(stderr, "Error: Memory allocation for playground failed.\n");
+        exit(EXIT_FAILURE);
     }
-    return;
+    
+    // Generate random binary values for the playground
+    for (int i = 0; i < k; i++) {
+        for (int j = 0; j < k; j++) {
+            playground[i * k + j] = drand48() < RANDOMNESS ? 1 : 0;
+        }
+    }
+
+    // Save the playground to a file
+    char filename_buffer[256];
+    sprintf(filename_buffer, "%s/%s.pgm", DIRNAME, filename);
+    generate_pgm_image(playground, MAXVAL, k, filename_buffer);
+
+    // Free the allocated memory
+    free(playground);
+}
+
+// Initialize and run playground evolution for a given number of steps
+void run_playground(const char* filename, int steps, int evolution_mode, int save_step) {
+    // Initialize the time counter
+    clock_t start, end;
+    double cpu_time_used;
+    start = clock();  // start time
+
+    // Read the initial playground state from the inital file
+    int *playground = NULL;
+    int k;
+    char filename_buffer[256];
+    sprintf(filename_buffer, "%s/%s.pgm", DIRNAME, filename);
+    read_generated_pgm_image(&playground, &k, filename_buffer);
+
+    // Check if memory allocation was successful
+    if (playground == NULL) {
+        fprintf(stderr, "Error: Memory allocation for playground failed.\n");
+        exit(EXIT_FAILURE);
+    }
+    
+    // Evolve the playground
+    evolve_playground(k, playground, evolution_mode, steps, save_step, filename);
+
+    // Free the allocated memory
+    free(playground);
+
+    // Print the time used
+    end = clock();  // stop time
+    cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC;
+    printf("Time taken: %f seconds\n", cpu_time_used);
+
+    // DEVELOPMENT ONLY
+    sprintf(filename_buffer, "openmp");
+    append_to_logs(filename, filename_buffer, evolution_mode, cpu_time_used, k, steps);
+}
+
+void evolve_playground(int k, int *playground, int evolution_mode, int steps, int save_step, const char* filename) {
+    // Evolve the playground based on the evolution mode
+    char filename_buffer[256];
+    for (int step = 0; step < steps; step++) {
+        switch (evolution_mode) {
+            case 0: // Ordered
+                update_playground_ordered(k, playground);
+                break;
+            case 1: // Static
+                update_playground_static(k, playground);
+                break;
+            case 2: // Random Start
+                update_playground_random_start(k, playground);
+                break;
+            case 3: // Chessboard
+                update_playground_chessboard(k, playground);
+                break;
+            default:
+                fprintf(stderr, "Error: Invalid evolution mode.\n");
+                exit(EXIT_FAILURE);
+        }
+
+        // Save the playground state to a file every save_step if save_step is not zero
+        if (save_step > 0 && (step + 1) % save_step == 0) {
+            sprintf(filename_buffer, "%s/%s_%05d.pgm", DIRNAME, filename, step + 1);
+            generate_pgm_image(playground, MAXVAL, k, filename_buffer);
+        }
+    }
+
+    // If save_step is zero, only save the final state
+    if (save_step == 0) {
+        sprintf(filename_buffer, "%s/%s_final.pgm", DIRNAME, filename);
+        generate_pgm_image(playground, MAXVAL, k, filename_buffer);
+    }
 }
 
 // Upgrade a single cell using the rules of the Game of Life
-int upgrade_cell(int c_i, int c_j, int k_i, int k_j, int* playground) {
+int upgrade_cell(int c_i, int c_j, int k, int *playground) {
     int n_i, n_j, neighbors = 0;
     for (int i = -1; i <= 1; i++) {
         for (int j = -1; j <= 1; j++) {
-            if (i == 0 && j == 0) continue; // Skip the cell itself
-            n_i = (c_i + i + k_i) % k_i; // Wrap around edges if necessary
-            n_j = (c_j + j + k_j) % k_j;
-            neighbors += playground[n_i * k_j + n_j];
+            if (i == 0 && j == 0) continue;  // Skip the cell itself
+            n_i = (c_i + i + k) % k;     // Wrap around edges if necessary
+            n_j = (c_j + j + k) % k;
+            neighbors += playground[n_i * k + n_j];
         }
     }
 
-    int current_state = playground[c_i * k_j + c_j];
+    int current_state = playground[c_i * k + c_j];
     if ((current_state == 1 && (neighbors == 2 || neighbors == 3)) ||
         (current_state == 0 && neighbors == 3)) {
-        return 1; // Cell stays alive or is born
+        return 1;  // Cell stays alive or is born
     } else {
-        return 0; // Cell dies or remains dead
+        return 0;  // Cell dies or remains dead
     }
 }
 
 // Update playground in an ordered manner with dynamically allocated memory
-void update_playground_ordered(int k_i, int k_j, int *playground) {
-    int *temp_playground = (int *)malloc(k_i * k_j * sizeof(int));
+void update_playground_ordered(int k, int *playground) {
+    int *temp_playground = (int *)malloc(k * k * sizeof(int));
     if (temp_playground == NULL) {
         perror("Failed to allocate memory for temp_playground");
         exit(EXIT_FAILURE);
     }
-
-    #pragma omp parallel for
-    for (int i = 0; i < k_i; i++) {
-        for (int j = 0; j < k_j; j++) {
-            temp_playground[i * k_j + j] = upgrade_cell(i, j, k_i, k_j, playground);
+    
+    #pragma omp parallel for collapse(2)
+    for (int i = 0; i < k; i++) {
+        for (int j = 0; j < k; j++) {
+            temp_playground[i * k + j] = upgrade_cell(i, j, k, playground);
         }
     }
 
-    memcpy(playground, temp_playground, k_i * k_j * sizeof(int));
-    free(temp_playground);
+    memcpy(playground, temp_playground, k * k * sizeof(int));
+    free(temp_playground);  // Free the dynamically allocated memory
 }
 
 // Static evolution
-void update_playground_static(int k_i, int k_j, int *playground) {
-    int new_states[k_i * k_j]; // First pass - calculate new states
+void update_playground_static(int k, int *playground) {
+    int new_states[k * k];  // First pass - calculate new states
 
-    #pragma omp parallel for // OpenMP directive for parallel loop
-    for (int i = 0; i < k_i; i++) {
-        for (int j = 0; j < k_j; j++) {
-            new_states[i * k_j + j] = upgrade_cell(i, j, k_i, k_j, playground);
+    #pragma omp parallel for collapse(2)
+    for (int i = 0; i < k; i++) {
+        for (int j = 0; j < k; j++) {
+            new_states[i * k + j] = upgrade_cell(i, j, k, playground);
         }
     }
 
-    memcpy(playground, new_states, k_i * k_j * sizeof(int)); // Second pass - update all cells at once
+    memcpy(playground, new_states, k * k * sizeof(int));  // Second pass - update all cells at once
 }
 
 // Helper function to shuffle an array
@@ -179,80 +238,67 @@ void shuffle(int *array, int n) {
 }
 
 /*
-Optimizing `update_playground_random_start` for parallelization requires 
-rethinking the sequential nature of the square wave propagation model. 
-This approach involve updating the playground using a shuffled list of cell coordinates. 
-Each thread will be assigned a subset of the entire playground to 
-operate on, reducing the introduction of race conditions. 
+Optimizing `update_playground_random_start` for parallelization requires
+rethinking the sequential nature of the square wave propagation model.
+This approach involve updating the playground using a shuffled list of cell coordinates.
+Each thread will be assigned a subset of the entire playground to
+operate on, reducing the introduction of race conditions.
 */
-// Random Start evolution with parallel update
-void update_playground_random_start(int k_i, int k_j, int *playground) {
-    int *temp_playground = (int *)malloc(k_i * k_j * sizeof(int));
-    int *indices = (int *)malloc(k_i * k_j * sizeof(int)); // Array to store cell indices
+// Random Start evolution
+//
+// Parallelizing operations with a random order is tricky because 
+// it may introduce race conditions. However, if you ensure that
+//  each thread operates on a separate region of the playground, 
+//  you can do it as follows:
+void update_playground_random_start(int k, int *playground) {
+    int *temp_playground = (int *)malloc(k * k * sizeof(int));
+    int *indices = (int *)malloc(k * k * sizeof(int));
     if (temp_playground == NULL || indices == NULL) {
         perror("Failed to allocate memory");
         exit(EXIT_FAILURE);
     }
-
-    // Populate array with indices
-    for (int i = 0; i < k_i * k_j; ++i) {
+    
+    for (int i = 0; i < k * k; ++i) {
         indices[i] = i;
     }
-
-    // Shuffle indices to randomize update order
-    shuffle(indices, k_i * k_j);
-
-    // Update cells in random order, potentially in parallel
+    
+    shuffle(indices, k * k);
+    
     #pragma omp parallel for
-    for (int idx = 0; idx < k_i * k_j; ++idx) {
-        int i = indices[idx] / k_j; // Get row index
-        int j = indices[idx] % k_j; // Get column index
-        temp_playground[indices[idx]] = upgrade_cell(i, j, k_i, k_j, playground);
+    for (int idx = 0; idx < k * k; ++idx) {
+        int i = indices[idx] / k;
+        int j = indices[idx] % k;
+        temp_playground[indices[idx]] = upgrade_cell(i, j, k, playground);
     }
-
-    // Copy the new cell states to the original playground
-    memcpy(playground, temp_playground, k_i * k_j * sizeof(int));
-
-    // Clean up
+    
+    memcpy(playground, temp_playground, k * k * sizeof(int));
     free(temp_playground);
     free(indices);
 }
 
-/*
-Both loops in the `update_playground_chessboard` function have been parallelized
-using the OpenMP `parallel for` directive. This pragma will cause the loop
-iterations to be distributed among multiple threads spawned by OpenMP.
-
-The correctness of the OpenMP usage in the code looks fine as the loops are
-independent by design due to the chessboard update scheme. The order of updating
-"white" and "black" cells ensures there are no data races, and each cell's state
-is computed based on the original `playground` array then stored in
-`temp_playground`, which is later copied back to the `playground` array.
-*/
 // Helper function that updates a color subset of cells ('color' is 0 for black, 1 for white)
-void update_chessboard_cells(int k_i, int k_j, int *playground, int *temp_playground, int color) {
-    #pragma omp parallel for
-    for (int i = 0; i < k_i; i++) {
-        for (int j = (i % 2) ^ color; j < k_j; j += 2) { // use XOR to switch between 0 and 1
-            temp_playground[i * k_j + j] = upgrade_cell(i, j, k_i, k_j, playground);
+void update_chessboard_cells(int k, int *playground, int *temp_playground, int color) {
+    for (int i = 0; i < k; i++) {
+        for (int j = (i % 2) ^ color; j < k; j += 2) {  // use XOR to switch between 0 and 1
+            temp_playground[i * k + j] = upgrade_cell(i, j, k, playground);
         }
     }
 }
 
 // Chessboard evolution refactored to reduce repetition
-void update_playground_chessboard(int k_i, int k_j, int *playground) {
-    int *temp_playground = (int *)malloc(k_i * k_j * sizeof(int));
+void update_playground_chessboard(int k, int *playground) {
+    int *temp_playground = (int *)malloc(k * k * sizeof(int));
     if (!temp_playground) {
         perror("Failed to allocate memory for temp_playground");
         exit(EXIT_FAILURE);
     }
 
     // Update white cells
-    update_chessboard_cells(k_i, k_j, playground, temp_playground, 1);
-    
+    update_chessboard_cells(k, playground, temp_playground, 1);
+
     // Update black cells
-    update_chessboard_cells(k_i, k_j, playground, temp_playground, 0);
-    
-    memcpy(playground, temp_playground, k_i * k_j * sizeof(int));
+    update_chessboard_cells(k, playground, temp_playground, 0);
+
+    memcpy(playground, temp_playground, k * k * sizeof(int));
     free(temp_playground);
 }

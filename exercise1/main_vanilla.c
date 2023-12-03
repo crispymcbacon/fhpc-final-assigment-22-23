@@ -27,7 +27,7 @@ int main(int argc, char **argv) {
     int option;
     bool initialize = false, run = false;
     int evolution_type = 0, steps = 0, save_step = 0;
-    int *k = (int *)malloc(sizeof(int));
+    int k = 0;
     char *filename = NULL;
 
      // Parse command-line arguments
@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
                 run = true;
                 break;
             case 'k': // Playground size
-                *k = atoi(optarg);
+                k = atoi(optarg);
                 break;
             case 'e': // Evolution type
                 evolution_type = atoi(optarg);
@@ -60,8 +60,8 @@ int main(int argc, char **argv) {
         }
     }
        // Perform the requested actions based on parsed arguments
-    if (initialize && filename != NULL && *k > 0) {
-        initialize_playground(*k, filename);
+    if (initialize && filename != NULL && k > 0) {
+        initialize_playground(k, filename);
     } else if (run && filename != NULL && steps > 0 && (evolution_type >= 0 && evolution_type <= 3)) {
         run_playground(filename, steps, evolution_type, save_step);
     } else {
@@ -76,7 +76,7 @@ int main(int argc, char **argv) {
 void initialize_playground(int k, const char* filename) {
     srand48(time(NULL)); // Set seed for random number generation
 
-    int *playground = (int *)malloc(k * k * sizeof(int)); // Allocate memory for playground
+    int *playground = (int *)calloc(k * k, sizeof(int)); // Allocate memory for playground
 
     // Check if memory allocation was successful
     if (playground == NULL) {
@@ -195,7 +195,7 @@ int upgrade_cell(int c_i, int c_j, int k, int *playground) {
 
 // Update playground in an ordered manner with dynamically allocated memory
 void update_playground_ordered(int k, int *playground) {
-    int *temp_playground = (int *)malloc(k * k * sizeof(int));
+    int *temp_playground = (int *)calloc(k * k, sizeof(int));
     if (temp_playground == NULL) {
         perror("Failed to allocate memory for temp_playground");
         exit(EXIT_FAILURE);
@@ -208,7 +208,10 @@ void update_playground_ordered(int k, int *playground) {
     }
 
     memcpy(playground, temp_playground, k * k * sizeof(int));
-    free(temp_playground);  // Free the dynamically allocated memory
+    
+    if (temp_playground != NULL) {
+        free(temp_playground); // Free the dynamically allocated memory
+    }
 }
 
 // Static evolution
@@ -243,7 +246,7 @@ operate on, reducing the introduction of race conditions.
 */
 // Random Start evolution
 void update_playground_random_start(int k, int *playground) {
-    int *temp_playground = (int *)malloc(k * k * sizeof(int));
+    int *temp_playground = (int *)calloc(k * k, sizeof(int));
     int *indices = (int *)malloc(k * k * sizeof(int));  // Array to store cell indices
     if (temp_playground == NULL || indices == NULL) {
         perror("Failed to allocate memory");
@@ -269,8 +272,12 @@ void update_playground_random_start(int k, int *playground) {
     memcpy(playground, temp_playground, k * k * sizeof(int));
 
     // Clean up
-    free(temp_playground);
-    free(indices);
+    if (temp_playground != NULL) {
+        free(temp_playground); // Free the dynamically allocated memory
+    }
+    if (indices != NULL) {
+        free(indices);
+    }
 }
 
 // Helper function that updates a color subset of cells ('color' is 0 for black, 1 for white)
@@ -284,7 +291,7 @@ void update_chessboard_cells(int k, int *playground, int *temp_playground, int c
 
 // Chessboard evolution refactored to reduce repetition
 void update_playground_chessboard(int k, int *playground) {
-    int *temp_playground = (int *)malloc(k * k * sizeof(int));
+    int *temp_playground = (int *)calloc(k * k, sizeof(int));
     if (!temp_playground) {
         perror("Failed to allocate memory for temp_playground");
         exit(EXIT_FAILURE);
@@ -297,5 +304,5 @@ void update_playground_chessboard(int k, int *playground) {
     update_chessboard_cells(k, playground, temp_playground, 0);
 
     memcpy(playground, temp_playground, k * k * sizeof(int));
-    free(temp_playground);
+    free(temp_playground); // Free the dynamically allocated memory
 }
