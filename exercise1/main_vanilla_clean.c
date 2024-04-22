@@ -19,8 +19,8 @@ int main(int argc, char **argv) {
     start = clock();  // start time
 
     // Initialize the playground
-    const int k = 100;
-    const int steps = 1e5;
+    const int k = 5;
+    const int steps = 100;
     const int mode = 3;
     int playground[k][k];
     int *p = &playground[0][0];

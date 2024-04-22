@@ -6,7 +6,8 @@ run-in-orfeo.md
 exclude.txt
 .vscode/settings.json
 TODO.md
-
+NOTES.md
+/test
 
 
 # Created by https://www.toptal.com/developers/gitignore/api/c,macos,visualstudiocode

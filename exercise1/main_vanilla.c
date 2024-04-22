@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include "pgm.h"
 #include "dev.h"
+#include <mpi.h>
 
 #define RANDOMNESS 0.3 // Probability of a cell being alive at the start of the simulation
 #define MAXVAL 255     // Maximum value of a pixel in the PGM image
@@ -13,7 +14,7 @@
 
 // Function prototypes
 void initialize_playground(int k, const char* filename);
-void run_playground(const char* filename, int steps, int evolution_mode, int save_step);
+void run_playground(const char* filename, int steps, int evolution_mode, int save_step, int rank);
 void evolve_playground(int k, int *playground, int evolution_mode, int steps, int save_step, const char* filename);
 void update_playground_ordered(int k, int *playground);
 void update_playground_static(int k, int *playground);
@@ -29,6 +30,11 @@ int main(int argc, char **argv) {
     int evolution_type = 0, steps = 0, save_step = 0;
     int k = 0;
     char *filename = NULL;
+
+    MPI_Init(NULL, NULL);
+    //
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);  // Get the rank of the current process
 
      // Parse command-line arguments
     while ((option = getopt(argc, argv, "irk:e:f:n:s:")) != -1) {
@@ -60,15 +66,17 @@ int main(int argc, char **argv) {
         }
     }
        // Perform the requested actions based on parsed arguments
+       printf("init: %i, k: %d, filename: %s, steps: %d, evolution_type: %d, save_step: %d\n", initialize, k, filename, steps, evolution_type, save_step);
     if (initialize && filename != NULL && k > 0) {
         initialize_playground(k, filename);
     } else if (run && filename != NULL && steps > 0 && (evolution_type >= 0 && evolution_type <= 3)) {
-        run_playground(filename, steps, evolution_type, save_step);
+        run_playground(filename, steps, evolution_type, save_step, rank);
     } else {
         fprintf(stderr, "Error: Missing or incorrect arguments provided.\n");
         exit(EXIT_FAILURE);
     }
 
+    MPI_Finalize();
     return 0;
 }
 
@@ -101,7 +109,7 @@ void initialize_playground(int k, const char* filename) {
 }
 
 // Initialize and run playground evolution for a given number of steps
-void run_playground(const char* filename, int steps, int evolution_mode, int save_step) {
+void run_playground(const char* filename, int steps, int evolution_mode, int save_step, int rank) {
     // Initialize the time counter
     clock_t start, end;
     double cpu_time_used;
@@ -132,8 +140,10 @@ void run_playground(const char* filename, int steps, int evolution_mode, int sav
     printf("Time taken: %f seconds\n", cpu_time_used);
 
     // DEVELOPMENT ONLY
-    sprintf(filename_buffer, "vanilla");
-    append_to_logs(filename, filename_buffer, evolution_mode, cpu_time_used, k, steps);
+    if (rank == 0) {
+        sprintf(filename_buffer, "vanilla");
+        append_to_logs(filename, filename_buffer, evolution_mode, cpu_time_used, k, steps);
+    }
 }
 
 void evolve_playground(int k, int *playground, int evolution_mode, int steps, int save_step, const char* filename) {
