@@ -9,6 +9,7 @@
 
 #include "dev.h"
 #include "pgm.h"
+#include "updates.h"
 
 #define RANDOMNESS 0.3
 #define MAXVAL 255
@@ -17,12 +18,11 @@
 void initialize_playground(int k, const char *filename, int rank);
 void run_playground(const char *filename, int steps, int evolution_mode, int save_step, int rank, int size);
 void evolve_playground(int k, int *playground, int evolution_mode, int steps, int save_step, const char *filename, int rank, int size);
-void update_playground_ordered(int k, int *playground, int rank, int size);
-void update_playground_static(int k, int *playground, int rank, int size);
-void update_playground_random_start(int k, int *playground, int rank, int size);
-void update_playground_chessboard(int k, int *playground, int rank, int size);
-int upgrade_cell(int c_i, int c_j, int k, int *playground);
-void shuffle(int *array, int n);
+// void update_playground_ordered(int k, int *playground, int rank, int size);
+// void update_playground_static(int k, int *playground, int rank, int size);
+// void update_playground_random_start(int k, int *playground, int rank, int size);
+// void update_playground_chessboard(int k, int *playground, int rank, int size);
+// int upgrade_cell(int c_i, int c_j, int k, int *playground);
 
 int main(int argc, char **argv) {
     int option;
@@ -153,12 +153,12 @@ void evolve_playground(int k, int *playground, int evolution_mode, int steps, in
             case 1:
                 update_playground_static(k, playground, rank, size);
                 break;
-            case 2:
-                update_playground_random_start(k, playground, rank, size);
-                break;
-            case 3:
-                update_playground_chessboard(k, playground, rank, size);
-                break;
+            // case 2:
+            //     update_playground_random_start(k, playground, rank, size);
+            //     break;
+            // case 3:
+            //     update_playground_chessboard(k, playground, rank, size);
+            //     break;
             default:
                 if (rank == 0) {
                     fprintf(stderr, "Error: Invalid evolution mode.\n");
@@ -178,148 +178,4 @@ void evolve_playground(int k, int *playground, int evolution_mode, int steps, in
         sprintf(filename_buffer, "%s/%s_final.pgm", DIRNAME, filename);
         generate_pgm_image(playground, MAXVAL, k, filename_buffer);
     }
-}
-
-int upgrade_cell(int c_i, int c_j, int k, int *playground) {
-    int n_i, n_j, neighbors = 0;
-    for (int i = -1; i <= 1; i++) {
-        for (int j = -1; j <= 1; j++) {
-            if (i == 0 && j == 0) continue;
-            n_i = (c_i + i + k) % k;
-            n_j = (c_j + j + k) % k;
-            neighbors += playground[n_i * k + n_j];
-        }
-    }
-    int current_state = playground[c_i * k + c_j];
-    if ((current_state == 1 && (neighbors == 2 || neighbors == 3)) ||
-        (current_state == 0 && neighbors == 3)) {
-        return 1;
-    } else {
-        return 0;
-    }
-}
-
-void update_playground_ordered(int k, int *playground, int rank, int size) {
-    int local_k = k / size;
-    int local_start = rank * local_k;
-    int local_end = (rank == size - 1) ? k : (rank + 1) * local_k;
-
-    int *temp_playground = (int *)calloc(local_k * k, sizeof(int));
-    if (temp_playground == NULL) {
-        perror("Failed to allocate memory for temp_playground");
-        MPI_Abort(MPI_COMM_WORLD, 1);
-    }
-
-#pragma omp parallel for collapse(2)
-    for (int i = local_start; i < local_end; i++) {
-        for (int j = 0; j < k; j++) {
-            temp_playground[(i - local_start) * k + j] = upgrade_cell(i, j, k, playground);
-        }
-    }
-
-    MPI_Allgather(temp_playground, local_k * k, MPI_INT, playground, local_k * k, MPI_INT, MPI_COMM_WORLD);
-
-    if (temp_playground != NULL) {
-        free(temp_playground);
-    }
-}
-
-void update_playground_static(int k, int *playground, int rank, int size) {
-    int local_k = k / size;
-    int local_start = rank * local_k;
-    int local_end = (rank == size - 1) ? k : (rank + 1) * local_k;
-
-    int *new_states = (int *)calloc(local_k * k, sizeof(int));
-    if (new_states == NULL) {
-        perror("Failed to allocate memory for new_states");
-        MPI_Abort(MPI_COMM_WORLD, 1);
-    }
-
-#pragma omp parallel for collapse(2)
-    for (int i = local_start; i < local_end; i++) {
-        for (int j = 0; j < k; j++) {
-            new_states[(i - local_start) * k + j] = upgrade_cell(i, j, k, playground);
-        }
-    }
-
-    MPI_Allgather(new_states, local_k * k, MPI_INT, playground, local_k * k, MPI_INT, MPI_COMM_WORLD);
-
-    if (new_states != NULL) {
-        free(new_states);
-    }
-}
-
-void shuffle(int *array, int n) {
-    for (int i = n - 1; i > 0; i--) {
-        int j = rand() % (i + 1);
-        int temp = array[i];
-        array[i] = array[j];
-        array[j] = temp;
-    }
-}
-
-void update_playground_random_start(int k, int *playground, int rank, int size) {
-    int local_k = k / size;
-    int local_start = rank * local_k;
-    int local_end = (rank == size - 1) ? k : (rank + 1) * local_k;
-
-    int *temp_playground = (int *)calloc(local_k * k, sizeof(int));
-    int *indices = (int *)malloc(local_k * k * sizeof(int));
-    if (temp_playground == NULL || indices == NULL) {
-        perror("Failed to allocate memory");
-        MPI_Abort(MPI_COMM_WORLD, 1);
-    }
-
-    for (int i = 0; i < local_k * k; ++i) {
-        indices[i] = i;
-    }
-
-    shuffle(indices, local_k * k);
-
-#pragma omp parallel for
-    for (int idx = 0; idx < local_k * k; ++idx) {
-        int i = local_start + indices[idx] / k;
-        int j = indices[idx] % k;
-        temp_playground[indices[idx]] = upgrade_cell(i, j, k, playground);
-    }
-
-    MPI_Allgather(temp_playground, local_k * k, MPI_INT, playground, local_k * k, MPI_INT, MPI_COMM_WORLD);
-
-    if (temp_playground != NULL) {
-        free(temp_playground);
-    }
-    if (indices != NULL) {
-        free(indices);
-    }
-}
-
-void update_chessboard_cells(int k, int *playground, int *temp_playground, int color, int rank, int size) {
-    int local_k = k / size;
-    int local_start = rank * local_k;
-    int local_end = (rank == size - 1) ? k : (rank + 1) * local_k;
-
-#pragma omp parallel for collapse(2)
-    for (int i = local_start; i < local_end; i++) {
-        for (int j = 0; j < k; j++) {
-            if ((i + j) % 2 == color) {
-                temp_playground[(i - local_start) * k + j] = upgrade_cell(i, j, k, playground);
-            }
-        }
-    }
-}
-
-void update_playground_chessboard(int k, int *playground, int rank, int size) {
-    int local_k = k / size;
-    int *temp_playground = (int *)calloc(local_k * k, sizeof(int));
-    if (!temp_playground) {
-        perror("Failed to allocate memory for temp_playground");
-        MPI_Abort(MPI_COMM_WORLD, 1);
-    }
-
-    update_chessboard_cells(k, playground, temp_playground, 1, rank, size);
-    update_chessboard_cells(k, playground, temp_playground, 0, rank, size);
-
-    MPI_Allgather(temp_playground, local_k * k, MPI_INT, playground, local_k * k, MPI_INT, MPI_COMM_WORLD);
-
-    free(temp_playground);
 }
