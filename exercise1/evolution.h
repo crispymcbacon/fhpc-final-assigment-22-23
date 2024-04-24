@@ -33,8 +33,8 @@ void update_playground_ordered(int k, int *playground, int rank, int num_procs) 
     int *top_ghost_row = (int *)malloc(k * sizeof(int));
     int *bottom_ghost_row = (int *)malloc(k * sizeof(int));
 
-    int top_neighbor = (rank - 1 + num_procs) % num_procs;
-    int bottom_neighbor = (rank + 1) % num_procs;
+    int top_neighbor = (num_procs > 1) ? (rank - 1 + num_procs) % num_procs : 0;
+    int bottom_neighbor = (num_procs > 1) ? (rank + 1) % num_procs : 0;
 
     MPI_Request request[4];
     MPI_Status status[4];
@@ -44,8 +44,10 @@ void update_playground_ordered(int k, int *playground, int rank, int num_procs) 
     MPI_Isend(&playground[(k - 1) * k], k, MPI_INT, bottom_neighbor, 0, MPI_COMM_WORLD, &request[2]);
     MPI_Irecv(top_ghost_row, k, MPI_INT, top_neighbor, 0, MPI_COMM_WORLD, &request[3]);
 
-    int start = rank * (k / num_procs);
-    int end = (rank == num_procs - 1) ? k : (rank + 1) * (k / num_procs);
+    int chunk_size = k / num_procs;
+    int remainder = k % num_procs;
+    int start = rank * chunk_size + ((rank < remainder) ? rank : remainder);
+    int end = start + chunk_size + (rank < remainder);
 
     #pragma omp parallel for collapse(2)
     for (int i = start; i < end; i++) {
@@ -124,3 +126,10 @@ void update_playground_static(int k, int *playground, int rank, int num_procs) {
     memcpy(playground, temp_playground, k * k * sizeof(int));
     free(temp_playground);
 }
+
+// The main difference between the two functions in terms of MPI is the order and manner
+// in which they exchange the ghost rows with the neighboring processes.
+// In `update_playground_ordered`, all send and receive operations are initiated at
+// the same time and the function waits for all of them to complete before it proceeds.
+// In `update_playground_static`, the send and receive operations are performed
+// in two steps: first for the top ghost row and then for the bottom ghost row.

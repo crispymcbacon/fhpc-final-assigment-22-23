@@ -9,7 +9,7 @@
 
 #include "dev.h"
 #include "pgm.h"
-#include "updates.h"
+#include "evolution.h"
 
 #define RANDOMNESS 0.3
 #define MAXVAL 255
