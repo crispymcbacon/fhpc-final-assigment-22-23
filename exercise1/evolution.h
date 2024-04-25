@@ -27,11 +27,7 @@ int upgrade_cell_ordered(int c_i, int c_j, int k, int *playground, int *top_ghos
     }
 }
 
-void update_playground_ordered(int k, int *playground, int rank, int num_procs) {
-
-    int *temp_playground = (int *)malloc(k * k * sizeof(int));
-    int *top_ghost_row = (int *)malloc(k * sizeof(int));
-    int *bottom_ghost_row = (int *)malloc(k * sizeof(int));
+void update_playground_ordered(int k, int *playground, int rank, int num_procs, int *temp_playground, int *top_ghost_row, int *bottom_ghost_row) {
 
     int top_neighbor = (num_procs > 1) ? (rank - 1 + num_procs) % num_procs : 0;
     int bottom_neighbor = (num_procs > 1) ? (rank + 1) % num_procs : 0;
@@ -60,9 +56,6 @@ void update_playground_ordered(int k, int *playground, int rank, int num_procs) 
 
     memcpy(playground, temp_playground, k * k * sizeof(int));
 
-    free(temp_playground);
-    free(top_ghost_row);
-    free(bottom_ghost_row);
 }
 
 void update_cell_static(int i, int j, int k, int *playground, int *temp_playground) {
