@@ -133,7 +133,6 @@ void update_playground_static(int k, int *playground, int rank, int num_procs, i
     }
 
     memcpy(playground, temp_playground, k * k * sizeof(int));
-    free(temp_playground);
 }
 
 // The main difference between the two functions in terms of MPI is the order and manner
