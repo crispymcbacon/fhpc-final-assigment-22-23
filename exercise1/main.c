@@ -154,20 +154,23 @@ void evolve_playground(int k, int *playground, int evolution_mode, int steps, in
     int *top_ghost_row = NULL;
     int *bottom_ghost_row = NULL;
 
-    // Allocate memory for ordered evolution
     if (evolution_mode == 0){
+        // Allocate memory for ordered evolution
         temp_playground = (int *)malloc(k * k * sizeof(int));
         top_ghost_row = (int *)malloc(k * sizeof(int));
         bottom_ghost_row = (int *)malloc(k * sizeof(int));
+    } else if (evolution_mode == 1) {
+        // Allocate memory for static evolution
+        temp_playground = (int *)calloc(k * k, sizeof(int));
     }
     
     for (int step = 0; step < steps; step++) {
         switch (evolution_mode) {
             case 0:
-                update_playground_ordered(int k, int *playground, int rank, int num_procs, int *temp_playground, int *top_ghost_row, int *bottom_ghost_row);
+                update_playground_ordered(k, playground, rank, size, temp_playground, top_ghost_row, bottom_ghost_row);
                 break;
             case 1:
-                update_playground_static(k, playground, rank, size);
+                update_playground_static(k, playground, rank, size, temp_playground);
                 break;
             // case 2:
             //     update_playground_random_start(k, playground, rank, size);
