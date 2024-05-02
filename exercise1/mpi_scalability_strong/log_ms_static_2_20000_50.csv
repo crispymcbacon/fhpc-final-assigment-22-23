@@ -1,0 +1,4 @@
+file;program;mode;size;step;time_taken;info
+miofile_20000;mpi_openmp;1;20000;50;1403.490362;-n1 -N2 THIN -k20000 -m:core
+file;program;mode;size;step;time_taken;info
+miofile_20000;mpi_openmp;1;20000;50;80.028084;-n24 -N2 THIN -k20000 -m:core

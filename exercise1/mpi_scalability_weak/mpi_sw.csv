@@ -1,0 +1,13 @@
+file;program;mode;size;step;time_taken;info
+playground_10000;mpi_openmp;0;10000;5;39.867451;-n1 -N3 THIN -k10000 -m:socket
+playground_10000;mpi_openmp;1;10000;5;35.447320;-n1 -N3 THIN -k10000 -m:socket
+playground_14143;mpi_openmp;0;14143;5;42.606072;-n2 -N3 THIN -k10000 -m:socket
+playground_14143;mpi_openmp;1;14143;5;37.685482;-n2 -N3 THIN -k10000 -m:socket
+playground_17321;mpi_openmp;0;17321;5;45.547842;-n3 -N3 THIN -k10000 -m:socket
+playground_17321;mpi_openmp;1;17321;5;39.535082;-n3 -N3 THIN -k10000 -m:socket
+playground_20000;mpi_openmp;0;20000;5;47.303834;-n4 -N3 THIN -k10000 -m:socket
+playground_20000;mpi_openmp;1;20000;5;40.686788;-n4 -N3 THIN -k10000 -m:socket
+playground_22361;mpi_openmp;0;22361;5;49.830179;-n5 -N3 THIN -k10000 -m:socket
+playground_22361;mpi_openmp;1;22361;5;42.502825;-n5 -N3 THIN -k10000 -m:socket
+playground_24495;mpi_openmp;0;24495;5;53.389848;-n6 -N3 THIN -k10000 -m:socket
+playground_24495;mpi_openmp;1;24495;5;45.184471;-n6 -N3 THIN -k10000 -m:socket

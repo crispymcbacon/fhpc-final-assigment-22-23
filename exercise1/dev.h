@@ -1,9 +1,9 @@
 #include <stdio.h>   // for using the standard input and output functions
 
 // DEVELOPMENT ONLY
-void append_to_logs(const char *filename, const char *program, int mode, double time_taken, int k, int steps, const char *info_string) {
+void append_to_logs(const char *log_filename, const char *filename, const char *program, int mode, double time_taken, int k, int steps, const char *info_string) {
         // Open the file in "a+" mode, which allows both appending and reading.
-        FILE *file = fopen("logs.csv", "a+");
+        FILE *file = fopen(log_filename, "a+");
         if (file == NULL) {
             printf("Failed to open or create logs.csv\n");
             return;

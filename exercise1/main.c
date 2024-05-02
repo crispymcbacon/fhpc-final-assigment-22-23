@@ -16,7 +16,7 @@
 #define DIRNAME "out.nosync"
 
 void initialize_playground(int k, const char *filename, int rank);
-void run_playground(const char *filename, int steps, int evolution_mode, int save_step, int rank, int size, const char *info_string);
+void run_playground(const char *filename, int steps, int evolution_mode, int save_step, int rank, int size, const char *info_string, const char *log_filename);
 void evolve_playground(int k, int *playground, int evolution_mode, int steps, int save_step, const char *filename, int rank, int size);
 // void update_playground_ordered(int k, int *playground, int rank, int size);
 // void update_playground_static(int k, int *playground, int rank, int size);
@@ -31,13 +31,14 @@ int main(int argc, char **argv) {
     int k = 0;
     char *filename = NULL;
     char *info_string = NULL;
+    char *log_filename = NULL;
 
     MPI_Init(NULL, NULL);
     int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-    while ((option = getopt(argc, argv, "irk:e:f:n:s:t:")) != -1) {
+    while ((option = getopt(argc, argv, "irk:e:f:n:s:t:l:")) != -1) {
         switch (option) {
             case 'i':  // Initialize playground
                 initialize = true;
@@ -63,6 +64,9 @@ int main(int argc, char **argv) {
             case 't':  // Save a string for debugging purposes
                 info_string = optarg;
                 break;
+            case 'l':  // Debugging option
+                log_filename = optarg;
+                break;
             default:
                 fprintf(stderr, "Usage: %s [-i] [-r] [-k size] [-e evolution_type] [-f filename] [-n steps] [-s save_step]\n", argv[0]);
                 exit(EXIT_FAILURE);
@@ -75,7 +79,7 @@ int main(int argc, char **argv) {
     if (initialize && filename != NULL && k > 0) {
         initialize_playground(k, filename, rank);
     } else if (run && filename != NULL && steps > 0 && (evolution_type >= 0 && evolution_type <= 3)) {
-        run_playground(filename, steps, evolution_type, save_step, rank, size, info_string);
+        run_playground(filename, steps, evolution_type, save_step, rank, size, info_string, log_filename);
     } else {
         if (rank == 0) {
             fprintf(stderr, "Error: Missing or incorrect arguments provided.\n");
@@ -116,7 +120,7 @@ void initialize_playground(int k, const char *filename, int rank) {
     }
 }
 
-void run_playground(const char *filename, int steps, int evolution_mode, int save_step, int rank, int size, const char *info_string) {
+void run_playground(const char *filename, int steps, int evolution_mode, int save_step, int rank, int size, const char *info_string, const char *log_filename) {
     clock_t start, end;
     double cpu_time_used;
     start = clock();
@@ -144,7 +148,7 @@ void run_playground(const char *filename, int steps, int evolution_mode, int sav
     if (rank == 0) {
         printf("Time taken: %f seconds\n", cpu_time_used);
         sprintf(filename_buffer, "mpi_openmp");
-        append_to_logs(filename, filename_buffer, evolution_mode, cpu_time_used, k, steps, info_string);
+        append_to_logs(log_filename, filename, filename_buffer, evolution_mode, cpu_time_used, k, steps, info_string);
     }
 }
 
