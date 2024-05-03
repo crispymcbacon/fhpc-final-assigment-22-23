@@ -17,12 +17,7 @@
 
 void initialize_playground(int k, const char *filename, int rank);
 void run_playground(const char *filename, int steps, int evolution_mode, int save_step, int rank, int size, const char *info_string, const char *log_filename);
-void evolve_playground(int k, int *playground, int evolution_mode, int steps, int save_step, const char *filename, int rank, int size);
-// void update_playground_ordered(int k, int *playground, int rank, int size);
-// void update_playground_static(int k, int *playground, int rank, int size);
-// void update_playground_random_start(int k, int *playground, int rank, int size);
-// void update_playground_chessboard(int k, int *playground, int rank, int size);
-// int upgrade_cell(int c_i, int c_j, int k, int *playground);
+void evolve_playground(int k, unsigned char *playground, int evolution_mode, int steps, int save_step, const char *filename, int rank, int size);
 
 int main(int argc, char **argv) {
     int option;
@@ -92,10 +87,10 @@ int main(int argc, char **argv) {
 }
 
 void initialize_playground(int k, const char *filename, int rank) {
-    int *playground = NULL;
+    unsigned char *playground = NULL;
     if (rank == 0) {
         srand48(time(NULL));
-        playground = (int *)calloc(k * k, sizeof(int));
+        playground = (unsigned char *)calloc(k * k, sizeof(unsigned char));
 
         if (playground == NULL) {
             fprintf(stderr, "Error: Memory allocation for playground failed.\n");
@@ -110,7 +105,7 @@ void initialize_playground(int k, const char *filename, int rank) {
         }
     }
 
-    MPI_Bcast(playground, k * k, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(playground, k * k, MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
 
     if (rank == 0) {
         char filename_buffer[256];
@@ -125,7 +120,7 @@ void run_playground(const char *filename, int steps, int evolution_mode, int sav
     double cpu_time_used;
     start = clock();
 
-    int *playground = NULL;
+    unsigned char *playground = NULL;
     int k;
     char filename_buffer[256];
     sprintf(filename_buffer, "%s/%s.pgm", DIRNAME, filename);
@@ -152,20 +147,20 @@ void run_playground(const char *filename, int steps, int evolution_mode, int sav
     }
 }
 
-void evolve_playground(int k, int *playground, int evolution_mode, int steps, int save_step, const char *filename, int rank, int size) {
+void evolve_playground(int k, unsigned char *playground, int evolution_mode, int steps, int save_step, const char *filename, int rank, int size) {
     char filename_buffer[256];
-    int *temp_playground = NULL;
-    int *top_ghost_row = NULL;
-    int *bottom_ghost_row = NULL;
+    unsigned char *temp_playground = NULL;
+    unsigned char *top_ghost_row = NULL;
+    unsigned char *bottom_ghost_row = NULL;
 
     if (evolution_mode == 0){
         // Allocate memory for ordered evolution
-        temp_playground = (int *)malloc(k * k * sizeof(int));
-        top_ghost_row = (int *)malloc(k * sizeof(int));
-        bottom_ghost_row = (int *)malloc(k * sizeof(int));
+        temp_playground = (unsigned char *)malloc(k * k * sizeof(unsigned char));
+        top_ghost_row = (unsigned char *)malloc(k * sizeof(unsigned char));
+        bottom_ghost_row = (unsigned char *)malloc(k * sizeof(unsigned char));
     } else if (evolution_mode == 1) {
         // Allocate memory for static evolution
-        temp_playground = (int *)calloc(k * k, sizeof(int));
+        temp_playground = (unsigned char *)calloc(k * k, sizeof(unsigned char));
     }
     
     for (int step = 0; step < steps; step++) {
@@ -203,9 +198,13 @@ void evolve_playground(int k, int *playground, int evolution_mode, int steps, in
     }
 
     // Free memory for ordered evolution
-    if (temp_playground != NULL && top_ghost_row != NULL && bottom_ghost_row != NULL) {
-        free(temp_playground);
+    if (temp_playground != NULL) {
+    free(temp_playground);
+    }
+    if (top_ghost_row != NULL) {
         free(top_ghost_row);
+    }
+    if (bottom_ghost_row != NULL) {
         free(bottom_ghost_row);
     }
 }

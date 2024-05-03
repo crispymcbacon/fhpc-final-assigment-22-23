@@ -1,0 +1,50 @@
+file;program;mode;size;step;time_taken;info
+miofile_10000;mpi_openmp;1;10000;10;73.960259;-n1 -N2 THIN -k10000 -m:core
+file;program;mode;size;step;time_taken;info
+miofile_10000;mpi_openmp;1;10000;10;37.622276;-n2 -N2 THIN -k10000 -m:core
+file;program;mode;size;step;time_taken;info
+miofile_10000;mpi_openmp;1;10000;10;19.663534;-n4 -N2 THIN -k10000 -m:core
+file;program;mode;size;step;time_taken;info
+miofile_10000;mpi_openmp;1;10000;10;13.629343;-n6 -N2 THIN -k10000 -m:core
+file;program;mode;size;step;time_taken;info
+miofile_10000;mpi_openmp;1;10000;10;10.570390;-n8 -N2 THIN -k10000 -m:core
+file;program;mode;size;step;time_taken;info
+miofile_10000;mpi_openmp;1;10000;10;8.754717;-n10 -N2 THIN -k10000 -m:core
+file;program;mode;size;step;time_taken;info
+miofile_10000;mpi_openmp;1;10000;10;7.487293;-n12 -N2 THIN -k10000 -m:core
+file;program;mode;size;step;time_taken;info
+miofile_10000;mpi_openmp;1;10000;10;6.585096;-n14 -N2 THIN -k10000 -m:core
+file;program;mode;size;step;time_taken;info
+miofile_10000;mpi_openmp;1;10000;10;5.936235;-n16 -N2 THIN -k10000 -m:core
+file;program;mode;size;step;time_taken;info
+miofile_10000;mpi_openmp;1;10000;10;5.423725;-n18 -N2 THIN -k10000 -m:core
+file;program;mode;size;step;time_taken;info
+miofile_10000;mpi_openmp;1;10000;10;4.947811;-n20 -N2 THIN -k10000 -m:core
+file;program;mode;size;step;time_taken;info
+miofile_10000;mpi_openmp;1;10000;10;4.621165;-n22 -N2 THIN -k10000 -m:core
+file;program;mode;size;step;time_taken;info
+miofile_10000;mpi_openmp;1;10000;10;4.350207;-n24 -N2 THIN -k10000 -m:core
+file;program;mode;size;step;time_taken;info
+miofile_10000;mpi_openmp;1;10000;10;4.146027;-n26 -N2 THIN -k10000 -m:core
+file;program;mode;size;step;time_taken;info
+miofile_10000;mpi_openmp;1;10000;10;3.889766;-n28 -N2 THIN -k10000 -m:core
+file;program;mode;size;step;time_taken;info
+miofile_10000;mpi_openmp;1;10000;10;3.782267;-n30 -N2 THIN -k10000 -m:core
+file;program;mode;size;step;time_taken;info
+miofile_10000;mpi_openmp;1;10000;10;3.588134;-n32 -N2 THIN -k10000 -m:core
+file;program;mode;size;step;time_taken;info
+miofile_10000;mpi_openmp;1;10000;10;3.426158;-n34 -N2 THIN -k10000 -m:core
+file;program;mode;size;step;time_taken;info
+miofile_10000;mpi_openmp;1;10000;10;3.312584;-n36 -N2 THIN -k10000 -m:core
+file;program;mode;size;step;time_taken;info
+miofile_10000;mpi_openmp;1;10000;10;3.201236;-n38 -N2 THIN -k10000 -m:core
+file;program;mode;size;step;time_taken;info
+miofile_10000;mpi_openmp;1;10000;10;3.123950;-n40 -N2 THIN -k10000 -m:core
+file;program;mode;size;step;time_taken;info
+miofile_10000;mpi_openmp;1;10000;10;3.039822;-n42 -N2 THIN -k10000 -m:core
+file;program;mode;size;step;time_taken;info
+miofile_10000;mpi_openmp;1;10000;10;2.956308;-n44 -N2 THIN -k10000 -m:core
+file;program;mode;size;step;time_taken;info
+miofile_10000;mpi_openmp;1;10000;10;2.913467;-n46 -N2 THIN -k10000 -m:core
+file;program;mode;size;step;time_taken;info
+miofile_10000;mpi_openmp;1;10000;10;2.818809;-n48 -N2 THIN -k10000 -m:core

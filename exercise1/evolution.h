@@ -1,7 +1,7 @@
 #include <mpi.h>
 #include <omp.h>
 
-int upgrade_cell_ordered(int c_i, int c_j, int k, int *playground, int *top_ghost_row, int *bottom_ghost_row) {
+unsigned char upgrade_cell_ordered(int c_i, int c_j, int k, unsigned char *playground, unsigned char *top_ghost_row, unsigned char *bottom_ghost_row) {
     int n_i, n_j, neighbors = 0;
     for (int i = -1; i <= 1; i++) {
         for (int j = -1; j <= 1; j++) {
@@ -18,7 +18,7 @@ int upgrade_cell_ordered(int c_i, int c_j, int k, int *playground, int *top_ghos
         }
     }
 
-    int current_state = playground[c_i * k + c_j];
+    unsigned char current_state = playground[c_i * k + c_j];
     if ((current_state == 1 && (neighbors == 2 || neighbors == 3)) ||
         (current_state == 0 && neighbors == 3)) {
         return 1;
@@ -27,7 +27,7 @@ int upgrade_cell_ordered(int c_i, int c_j, int k, int *playground, int *top_ghos
     }
 }
 
-void update_playground_ordered(int k, int *playground, int rank, int num_procs, int *temp_playground, int *top_ghost_row, int *bottom_ghost_row) {
+void update_playground_ordered(int k, unsigned char *playground, int rank, int num_procs, unsigned char *temp_playground, unsigned char *top_ghost_row, unsigned char *bottom_ghost_row) {
 
     int top_neighbor = (num_procs > 1) ? (rank - 1 + num_procs) % num_procs : 0;
     int bottom_neighbor = (num_procs > 1) ? (rank + 1) % num_procs : 0;
@@ -36,10 +36,10 @@ void update_playground_ordered(int k, int *playground, int rank, int num_procs, 
     MPI_Status status[4];
 
     // Send top ghost row to previous process and receive from next process
-    MPI_Isend(&playground[0], k, MPI_INT, top_neighbor, 1, MPI_COMM_WORLD, &request[0]);
-    MPI_Irecv(bottom_ghost_row, k, MPI_INT, bottom_neighbor, 1, MPI_COMM_WORLD, &request[1]);
-    MPI_Isend(&playground[(k - 1) * k], k, MPI_INT, bottom_neighbor, 0, MPI_COMM_WORLD, &request[2]);
-    MPI_Irecv(top_ghost_row, k, MPI_INT, top_neighbor, 0, MPI_COMM_WORLD, &request[3]);
+    MPI_Isend(&playground[0], k, MPI_UNSIGNED_CHAR, top_neighbor, 1, MPI_COMM_WORLD, &request[0]);
+    MPI_Irecv(bottom_ghost_row, k, MPI_UNSIGNED_CHAR, bottom_neighbor, 1, MPI_COMM_WORLD, &request[1]);
+    MPI_Isend(&playground[(k - 1) * k], k, MPI_UNSIGNED_CHAR, bottom_neighbor, 0, MPI_COMM_WORLD, &request[2]);
+    MPI_Irecv(top_ghost_row, k, MPI_UNSIGNED_CHAR, top_neighbor, 0, MPI_COMM_WORLD, &request[3]);
 
     // Calculate the range of rows to be processed by the current process
     int chunk_size = k / num_procs;
@@ -70,10 +70,10 @@ void update_playground_ordered(int k, int *playground, int rank, int num_procs, 
         }
     }
 
-    memcpy(playground, temp_playground, k * k * sizeof(int));
+    memcpy(playground, temp_playground, k * k * sizeof(unsigned char));
 }
 
-void update_cell_static(int i, int j, int k, int *playground, int *temp_playground) {
+void update_cell_static(int i, int j, int k, unsigned char *playground, unsigned char *temp_playground) {
     int alive_neighbors = 0;
 
     for (int di = -1; di <= 1; di++) {
@@ -97,7 +97,7 @@ void update_cell_static(int i, int j, int k, int *playground, int *temp_playgrou
     }
 }
 
-void update_playground_static(int k, int *playground, int rank, int num_procs, int *temp_playground) {
+void update_playground_static(int k, unsigned char *playground, int rank, int num_procs, unsigned char *temp_playground) {
     int rows_per_proc = k / num_procs;
     int remainder = k % num_procs;
     int start_row = rank * rows_per_proc + (rank < remainder ? rank : remainder);
@@ -108,18 +108,18 @@ void update_playground_static(int k, int *playground, int rank, int num_procs, i
 
     // Send top ghost row to previous process and receive from next process
     if (rank > 0) {
-        MPI_Isend(playground + start_row * k, k, MPI_INT, rank - 1, 0, MPI_COMM_WORLD, &requests[request_count++]);
+        MPI_Isend(playground + start_row * k, k, MPI_UNSIGNED_CHAR, rank - 1, 0, MPI_COMM_WORLD, &requests[request_count++]);
     }
     if (rank < num_procs - 1) {
-        MPI_Irecv(playground + end_row * k, k, MPI_INT, rank + 1, 0, MPI_COMM_WORLD, &requests[request_count++]);
+        MPI_Irecv(playground + end_row * k, k, MPI_UNSIGNED_CHAR, rank + 1, 0, MPI_COMM_WORLD, &requests[request_count++]);
     }
 
     // Send bottom ghost row to next process and receive from previous process
     if (rank < num_procs - 1) {
-        MPI_Isend(playground + (end_row - 1) * k, k, MPI_INT, rank + 1, 0, MPI_COMM_WORLD, &requests[request_count++]);
+        MPI_Isend(playground + (end_row - 1) * k, k, MPI_UNSIGNED_CHAR, rank + 1, 0, MPI_COMM_WORLD, &requests[request_count++]);
     }
     if (rank > 0) {
-        MPI_Irecv(playground + (start_row - 1) * k, k, MPI_INT, rank - 1, 0, MPI_COMM_WORLD, &requests[request_count++]);
+        MPI_Irecv(playground + (start_row - 1) * k, k, MPI_UNSIGNED_CHAR, rank - 1, 0, MPI_COMM_WORLD, &requests[request_count++]);
     }
 
     MPI_Waitall(request_count, requests, MPI_STATUSES_IGNORE);
@@ -132,7 +132,7 @@ void update_playground_static(int k, int *playground, int rank, int num_procs, i
         }
     }
 
-    memcpy(playground, temp_playground, k * k * sizeof(int));
+    memcpy(playground, temp_playground, k * k * sizeof(unsigned char));
 }
 
 // The main difference between the two functions in terms of MPI is the order and manner
