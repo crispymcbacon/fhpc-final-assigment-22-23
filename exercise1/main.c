@@ -11,7 +11,7 @@
 #include "pgm.h"
 #include "evolution.h"
 
-#define RANDOMNESS 0.3
+#define RANDOMNESS 0.5
 #define MAXVAL 255
 #define DIRNAME "out.nosync"
 
@@ -118,8 +118,11 @@ void initialize_playground(int k, const char *filename, int rank) {
 void run_playground(const char *filename, int steps, int evolution_mode, int save_step, int rank, int size, const char *info_string, const char *log_filename) {
     clock_t start, end;
     double cpu_time_used;
-    start = clock();
 
+    if (rank == 0){
+        start = omp_get_wtime();
+    }
+    
     unsigned char *playground = NULL;
     int k;
     char filename_buffer[256];
@@ -131,16 +134,15 @@ void run_playground(const char *filename, int steps, int evolution_mode, int sav
         MPI_Abort(MPI_COMM_WORLD, 1);
     }
 
-    printf("Rank %d: k = %d\n", rank, k);
-
     evolve_playground(k, playground, evolution_mode, steps, save_step, filename, rank, size);
 
-    free(playground);
-
-    end = clock();
-    cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC;
+    if (playground != NULL) {
+        free(playground);
+    }
 
     if (rank == 0) {
+        end = omp_get_wtime();
+        double cpu_time_used = end - start;
         printf("Time taken: %f seconds\n", cpu_time_used);
         sprintf(filename_buffer, "mpi_openmp");
         append_to_logs(log_filename, filename, filename_buffer, evolution_mode, cpu_time_used, k, steps, info_string);
@@ -152,12 +154,13 @@ void evolve_playground(int k, unsigned char *playground, int evolution_mode, int
     unsigned char *temp_playground = NULL;
     unsigned char *top_ghost_row = NULL;
     unsigned char *bottom_ghost_row = NULL;
+    unsigned char *gathered_playground = NULL;
 
     if (evolution_mode == 0){
         // Allocate memory for ordered evolution
-        temp_playground = (unsigned char *)malloc(k * k * sizeof(unsigned char));
-        top_ghost_row = (unsigned char *)malloc(k * sizeof(unsigned char));
-        bottom_ghost_row = (unsigned char *)malloc(k * sizeof(unsigned char));
+        temp_playground = (unsigned char *)calloc(k * k, sizeof(unsigned char));
+        top_ghost_row = (unsigned char *)calloc(k * k, sizeof(unsigned char));
+        bottom_ghost_row = (unsigned char *)calloc(k * k, sizeof(unsigned char));
     } else if (evolution_mode == 1) {
         // Allocate memory for static evolution
         temp_playground = (unsigned char *)calloc(k * k, sizeof(unsigned char));
@@ -184,27 +187,49 @@ void evolve_playground(int k, unsigned char *playground, int evolution_mode, int
                 MPI_Abort(MPI_COMM_WORLD, 1);
         }
 
+        
+        // Gather playground from all processes
+        if (rank == 0) {
+            gathered_playground = (unsigned char *)calloc(k * k, sizeof(unsigned char));
+        }
+
+        // Calculate the number of rows that each process is updating
+        int rows_per_proc = k / size;
+        int remainder = k % size;
+        int start_row = rank * rows_per_proc + (rank < remainder ? rank : remainder);
+        int end_row = start_row + rows_per_proc + (rank < remainder ? 1 : 0);
+
+        // Calculate the number of cells that each process is updating
+        int num_cells = (end_row - start_row) * k;
+
+        // Gather the updated portions of the playground from each process
+        MPI_Gather(playground + start_row * k, num_cells, MPI_UNSIGNED_CHAR, gathered_playground, num_cells, MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
+
+        // Print playground
         if (save_step > 0 && (step + 1) % save_step == 0) {
             if (rank == 0) {
                 sprintf(filename_buffer, "%s/%s_%05d.pgm", DIRNAME, filename, step + 1);
-                generate_pgm_image(playground, MAXVAL, k, filename_buffer);
+                generate_pgm_image(gathered_playground, MAXVAL, k, filename_buffer);  // Use gathered_playground here
             }
         }
     }
 
     if (save_step == 0 && rank == 0) {
         sprintf(filename_buffer, "%s/%s_final.pgm", DIRNAME, filename);
-        generate_pgm_image(playground, MAXVAL, k, filename_buffer);
+        generate_pgm_image(gathered_playground, MAXVAL, k, filename_buffer);  // Use gathered_playground here
     }
 
     // Free memory for ordered evolution
     if (temp_playground != NULL) {
-    free(temp_playground);
+        free(temp_playground);
     }
     if (top_ghost_row != NULL) {
         free(top_ghost_row);
     }
     if (bottom_ghost_row != NULL) {
         free(bottom_ghost_row);
+    }
+    if (rank == 0 && gathered_playground != NULL) {
+        free(gathered_playground);
     }
 }

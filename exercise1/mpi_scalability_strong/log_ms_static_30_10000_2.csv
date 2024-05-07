@@ -1,0 +1,22 @@
+file;program;mode;size;step;time_taken;info
+miofile_10000;mpi_openmp;1;10000;30;184.000000;-n1 -N2 THIN -k10000 -m:core
+
+miofile_10000;mpi_openmp;1;10000;30;95.000000;-n2 -N2 THIN -k10000 -m:core
+
+miofile_10000;mpi_openmp;1;10000;30;49.000000;-n4 -N2 THIN -k10000 -m:core
+
+miofile_10000;mpi_openmp;1;10000;30;27.000000;-n8 -N2 THIN -k10000 -m:core
+
+miofile_10000;mpi_openmp;1;10000;30;23.000000;-n10 -N2 THIN -k10000 -m:core
+
+miofile_10000;mpi_openmp;1;10000;30;16.000000;-n16 -N2 THIN -k10000 -m:core
+
+miofile_10000;mpi_openmp;1;10000;30;13.000000;-n20 -N2 THIN -k10000 -m:core
+
+miofile_10000;mpi_openmp;1;10000;30;11.000000;-n24 -N2 THIN -k10000 -m:core
+
+miofile_10000;mpi_openmp;1;10000;30;11.000000;-n26 -N2 THIN -k10000 -m:core
+
+miofile_10000;mpi_openmp;1;10000;30;9.000000;-n32 -N2 THIN -k10000 -m:core
+
+miofile_10000;mpi_openmp;1;10000;30;8.000000;-n40 -N2 THIN -k10000 -m:core

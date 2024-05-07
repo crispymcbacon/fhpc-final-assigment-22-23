@@ -1,5 +1,20 @@
 #include <mpi.h>
 #include <omp.h>
+#include <stdio.h>
+
+void print_playground(int k, unsigned char *playground, char *text) {
+    printf("%s\n", text);
+    for (int i = 0; i < k; i++) {
+        for (int j = 0; j < k; j++) {
+            printf("%d ", playground[i * k + j]);
+        }
+        printf("\n");
+    }
+    printf("\n");
+}
+
+///////////////////////////////
+// ORDERED EVOLUTION
 
 unsigned char upgrade_cell_ordered(int c_i, int c_j, int k, unsigned char *playground, unsigned char *top_ghost_row, unsigned char *bottom_ghost_row) {
     int n_i, n_j, neighbors = 0;
@@ -19,6 +34,7 @@ unsigned char upgrade_cell_ordered(int c_i, int c_j, int k, unsigned char *playg
     }
 
     unsigned char current_state = playground[c_i * k + c_j];
+
     if ((current_state == 1 && (neighbors == 2 || neighbors == 3)) ||
         (current_state == 0 && neighbors == 3)) {
         return 1;
@@ -28,7 +44,6 @@ unsigned char upgrade_cell_ordered(int c_i, int c_j, int k, unsigned char *playg
 }
 
 void update_playground_ordered(int k, unsigned char *playground, int rank, int num_procs, unsigned char *temp_playground, unsigned char *top_ghost_row, unsigned char *bottom_ghost_row) {
-
     int top_neighbor = (num_procs > 1) ? (rank - 1 + num_procs) % num_procs : 0;
     int bottom_neighbor = (num_procs > 1) ? (rank + 1) % num_procs : 0;
 
@@ -46,7 +61,7 @@ void update_playground_ordered(int k, unsigned char *playground, int rank, int n
     int remainder = k % num_procs;
     int start = rank * chunk_size + ((rank < remainder) ? rank : remainder);
     int end = start + chunk_size + (rank < remainder);
-
+    
     // Start computation that does not depend on the data being communicated
     #pragma omp parallel for collapse(2)
     for (int i = start; i < end; i++) {
@@ -73,6 +88,9 @@ void update_playground_ordered(int k, unsigned char *playground, int rank, int n
     memcpy(playground, temp_playground, k * k * sizeof(unsigned char));
 }
 
+///////////////////////////////
+// STATIC EVOLUTION
+
 void update_cell_static(int i, int j, int k, unsigned char *playground, unsigned char *temp_playground) {
     int alive_neighbors = 0;
 
@@ -90,7 +108,7 @@ void update_cell_static(int i, int j, int k, unsigned char *playground, unsigned
     int cell = playground[i * k + j];
     if (cell == 1 && (alive_neighbors < 2 || alive_neighbors > 3)) {
         temp_playground[i * k + j] = 0;
-    } else if (cell == 0 && alive_neighbors == 3) {
+    } else if (cell == 0 && alive_neighbors > 3) {
         temp_playground[i * k + j] = 1;
     } else {
         temp_playground[i * k + j] = cell;
@@ -134,10 +152,3 @@ void update_playground_static(int k, unsigned char *playground, int rank, int nu
 
     memcpy(playground, temp_playground, k * k * sizeof(unsigned char));
 }
-
-// The main difference between the two functions in terms of MPI is the order and manner
-// in which they exchange the ghost rows with the neighboring processes.
-// In `update_playground_ordered`, all send and receive operations are initiated at
-// the same time and the function waits for all of them to complete before it proceeds.
-// In `update_playground_static`, the send and receive operations are performed
-// in two steps: first for the top ghost row and then for the bottom ghost row.

@@ -1,0 +1,24 @@
+file;program;mode;size;step;time_taken;info
+miofile_omp_25000;mpi_openmp;1;25000;10;220.000000;-n2 -N1 THIN -k25000 -m:socket -numthreads:1
+
+miofile_omp_25000;mpi_openmp;1;25000;10;118.000000;-n2 -N1 THIN -k25000 -m:socket -numthreads:2
+
+miofile_omp_25000;mpi_openmp;1;25000;10;84.000000;-n2 -N1 THIN -k25000 -m:socket -numthreads:3
+
+miofile_omp_25000;mpi_openmp;1;25000;10;66.000000;-n2 -N1 THIN -k25000 -m:socket -numthreads:4
+
+miofile_omp_25000;mpi_openmp;1;25000;10;56.000000;-n2 -N1 THIN -k25000 -m:socket -numthreads:5
+
+miofile_omp_25000;mpi_openmp;1;25000;10;49.000000;-n2 -N1 THIN -k25000 -m:socket -numthreads:6
+
+miofile_omp_25000;mpi_openmp;1;25000;10;44.000000;-n2 -N1 THIN -k25000 -m:socket -numthreads:7
+
+miofile_omp_25000;mpi_openmp;1;25000;10;40.000000;-n2 -N1 THIN -k25000 -m:socket -numthreads:8
+
+miofile_omp_25000;mpi_openmp;1;25000;10;37.000000;-n2 -N1 THIN -k25000 -m:socket -numthreads:9
+
+miofile_omp_25000;mpi_openmp;1;25000;10;35.000000;-n2 -N1 THIN -k25000 -m:socket -numthreads:10
+
+miofile_omp_25000;mpi_openmp;1;25000;10;34.000000;-n2 -N1 THIN -k25000 -m:socket -numthreads:11
+
+miofile_omp_25000;mpi_openmp;1;25000;10;32.000000;-n2 -N1 THIN -k25000 -m:socket -numthreads:12
