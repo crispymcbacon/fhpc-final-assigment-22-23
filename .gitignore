@@ -1,5 +1,4 @@
 ### My Files ###
-*.sh
 *.mp4
 /exercise1/*.csv
 run-in-orfeo.md
@@ -8,6 +7,8 @@ exclude.txt
 TODO.md
 NOTES.md
 /test
+sync_to_orfeo.sh
+.vscode
 
 
 # Created by https://www.toptal.com/developers/gitignore/api/c,macos,visualstudiocode

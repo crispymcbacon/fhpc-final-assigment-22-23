@@ -6,6 +6,8 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <sys/time.h>
+#include <time.h>
 
 #include "dev.h"
 #include "pgm.h"
@@ -14,6 +16,7 @@
 #define RANDOMNESS 0.5
 #define MAXVAL 255
 #define DIRNAME "out.nosync"
+struct timeval start_time, end_time;
 
 void initialize_playground(int k, const char *filename, int rank);
 void run_playground(const char *filename, int steps, int evolution_mode, int save_step, int rank, int size, const char *info_string, const char *log_filename);
@@ -116,11 +119,10 @@ void initialize_playground(int k, const char *filename, int rank) {
 }
 
 void run_playground(const char *filename, int steps, int evolution_mode, int save_step, int rank, int size, const char *info_string, const char *log_filename) {
-    clock_t start, end;
-    double cpu_time_used;
+    double time_elapsed;
 
     if (rank == 0){
-        start = omp_get_wtime();
+        gettimeofday(&start_time, NULL);
     }
     
     unsigned char *playground = NULL;
@@ -141,11 +143,11 @@ void run_playground(const char *filename, int steps, int evolution_mode, int sav
     }
 
     if (rank == 0) {
-        end = omp_get_wtime();
-        double cpu_time_used = end - start;
-        printf("Time taken: %f seconds\n", cpu_time_used);
+        gettimeofday(&end_time, NULL);
+        time_elapsed = (end_time.tv_sec - start_time.tv_sec) + (end_time.tv_usec - start_time.tv_usec) / 1e6;
+        printf("Time taken: %f seconds\n", time_elapsed);
         sprintf(filename_buffer, "mpi_openmp");
-        append_to_logs(log_filename, filename, filename_buffer, evolution_mode, cpu_time_used, k, steps, info_string);
+        append_to_logs(log_filename, filename, filename_buffer, evolution_mode, time_elapsed, k, steps, info_string);
     }
 }
 
