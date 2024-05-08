@@ -1,4 +1,4 @@
-# fhpc-final-assigment-22-23
+# fhpc-final-assigment-23-24
 
 This repository contains the final assignment for the FHPC course. It consists of three exercises, each located in its own directory.
 
